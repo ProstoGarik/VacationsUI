@@ -22,5 +22,20 @@ namespace Praktika
         {
             VacationsData = dataManager.GetTable(table, dbPath, dbPassword);
         }
+
+        public bool DeleteRow(string table, string primaryKeyColumn, object keyValue)
+        {
+            bool success = dataManager.DeleteRow(table, primaryKeyColumn, keyValue);
+            if (success && VacationsData != null)
+            {
+                // Удаление записи в интерфейсе пользователя
+                string filterExpression = $"[{primaryKeyColumn}] = {keyValue}";
+                DataRow[] rows = VacationsData.Select(filterExpression);
+                if (rows.Length > 0)
+                    rows[0].Delete();
+                VacationsData.AcceptChanges();
+            }
+            return success;
+        }
     }
 }

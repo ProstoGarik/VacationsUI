@@ -35,12 +35,16 @@
             // 
             // tableDataGridView
             // 
+            tableDataGridView.BackgroundColor = SystemColors.Control;
+            tableDataGridView.BorderStyle = BorderStyle.None;
             tableDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             tableDataGridView.Location = new Point(12, 48);
             tableDataGridView.Name = "tableDataGridView";
             tableDataGridView.RowHeadersWidth = 51;
-            tableDataGridView.Size = new Size(813, 337);
+            tableDataGridView.ScrollBars = ScrollBars.Vertical;
+            tableDataGridView.Size = new Size(918, 337);
             tableDataGridView.TabIndex = 0;
+            tableDataGridView.CellClick += TableDataGridView_CellClick;
             // 
             // TableSelectComboBox
             // 
@@ -55,7 +59,7 @@
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(837, 479);
+            ClientSize = new Size(942, 493);
             Controls.Add(TableSelectComboBox);
             Controls.Add(tableDataGridView);
             Name = "MainForm";

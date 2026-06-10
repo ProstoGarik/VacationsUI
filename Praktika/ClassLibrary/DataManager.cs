@@ -37,5 +37,27 @@ namespace ClassLibrary
             }
             return dataTable;
         }
+
+        /// <summary>
+        /// Удаляет запись из указанной таблицы по значению первичного ключа
+        /// </summary>
+        /// <param name="table">Имя таблицы</param>
+        /// <param name="primaryKeyColumn">Имя столбца первичного ключа (например, "ID")</param>
+        /// <param name="keyValue">Значение первичного ключа удаляемой строки</param>
+        /// <returns>True если удаление успешно, иначе False</returns>
+        public bool DeleteRow(string table, string primaryKeyColumn, object keyValue)
+        {
+            using (OleDbConnection conn = new OleDbConnection(connectionManager.ConnectionString))
+            {
+                string query = $"DELETE FROM [{table}] WHERE [{primaryKeyColumn}] = ?";
+                using (OleDbCommand cmd = new OleDbCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("?", keyValue);
+                    conn.Open();
+                    int rowsAffected = cmd.ExecuteNonQuery();
+                    return rowsAffected > 0;
+                }
+            }
+        }
     }
 }
