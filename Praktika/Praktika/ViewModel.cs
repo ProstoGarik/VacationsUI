@@ -18,9 +18,9 @@ namespace Praktika
         /// </summary>
         /// <param name="dbPath"></param>
         /// <param name="dbPassword"></param>
-        public void LoadData(string dbPath, string dbPassword)
+        public void LoadTable(string table, string dbPath, string dbPassword)
         {
-            VacationsData = dataManager.GetVacationsTable(dbPath, dbPassword);
+            VacationsData = dataManager.GetTable(table, dbPath, dbPassword);
         }
     }
 }

@@ -29,23 +29,34 @@
         private void InitializeComponent()
         {
             tableDataGridView = new DataGridView();
+            TableSelectComboBox = new ComboBox();
             ((System.ComponentModel.ISupportInitialize)tableDataGridView).BeginInit();
             SuspendLayout();
             // 
             // tableDataGridView
             // 
             tableDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            tableDataGridView.Location = new Point(12, 12);
+            tableDataGridView.Location = new Point(12, 48);
             tableDataGridView.Name = "tableDataGridView";
             tableDataGridView.RowHeadersWidth = 51;
             tableDataGridView.Size = new Size(813, 337);
             tableDataGridView.TabIndex = 0;
+            // 
+            // TableSelectComboBox
+            // 
+            TableSelectComboBox.FormattingEnabled = true;
+            TableSelectComboBox.Location = new Point(12, 12);
+            TableSelectComboBox.Name = "TableSelectComboBox";
+            TableSelectComboBox.Size = new Size(266, 28);
+            TableSelectComboBox.TabIndex = 1;
+            TableSelectComboBox.SelectedIndexChanged += TableSelectComboBox_SelectedIndexChanged;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(837, 479);
+            Controls.Add(TableSelectComboBox);
             Controls.Add(tableDataGridView);
             Name = "MainForm";
             Text = "Отпуска рабочих";
@@ -57,5 +68,6 @@
         #endregion
 
         private DataGridView tableDataGridView;
+        private ComboBox TableSelectComboBox;
     }
 }
