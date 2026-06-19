@@ -30,6 +30,10 @@
         {
             tableDataGridView = new DataGridView();
             TableSelectComboBox = new ComboBox();
+            AddRowButton = new Button();
+            FilterButton = new Button();
+            FilterStatusLabel = new Label();
+            ResetFilterButton = new Button();
             ((System.ComponentModel.ISupportInitialize)tableDataGridView).BeginInit();
             SuspendLayout();
             // 
@@ -38,7 +42,7 @@
             tableDataGridView.BackgroundColor = SystemColors.Control;
             tableDataGridView.BorderStyle = BorderStyle.None;
             tableDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            tableDataGridView.Location = new Point(12, 48);
+            tableDataGridView.Location = new Point(-3, 46);
             tableDataGridView.Name = "tableDataGridView";
             tableDataGridView.RowHeadersWidth = 51;
             tableDataGridView.ScrollBars = ScrollBars.Vertical;
@@ -55,11 +59,53 @@
             TableSelectComboBox.TabIndex = 1;
             TableSelectComboBox.SelectedIndexChanged += TableSelectComboBox_SelectedIndexChanged;
             // 
+            // AddRowButton
+            // 
+            AddRowButton.Location = new Point(12, 389);
+            AddRowButton.Name = "AddRowButton";
+            AddRowButton.Size = new Size(204, 92);
+            AddRowButton.TabIndex = 2;
+            AddRowButton.Text = "Добавить данные";
+            AddRowButton.UseVisualStyleBackColor = true;
+            AddRowButton.Click += AddRowButton_Click;
+            // 
+            // FilterButton
+            // 
+            FilterButton.Location = new Point(245, 389);
+            FilterButton.Name = "FilterButton";
+            FilterButton.Size = new Size(162, 48);
+            FilterButton.TabIndex = 3;
+            FilterButton.Text = "Фильтр";
+            FilterButton.UseVisualStyleBackColor = true;
+            FilterButton.Click += FilterButton_Click;
+            // 
+            // FilterStatusLabel
+            // 
+            FilterStatusLabel.AutoSize = true;
+            FilterStatusLabel.Location = new Point(413, 389);
+            FilterStatusLabel.Name = "FilterStatusLabel";
+            FilterStatusLabel.Size = new Size(146, 20);
+            FilterStatusLabel.TabIndex = 4;
+            FilterStatusLabel.Text = "Фильтр: Отсутствует";
+            // 
+            // ResetFilterButton
+            // 
+            ResetFilterButton.Location = new Point(245, 443);
+            ResetFilterButton.Name = "ResetFilterButton";
+            ResetFilterButton.Size = new Size(162, 38);
+            ResetFilterButton.TabIndex = 5;
+            ResetFilterButton.Text = "Сбросить фильтр";
+            ResetFilterButton.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(942, 493);
+            Controls.Add(ResetFilterButton);
+            Controls.Add(FilterStatusLabel);
+            Controls.Add(FilterButton);
+            Controls.Add(AddRowButton);
             Controls.Add(TableSelectComboBox);
             Controls.Add(tableDataGridView);
             Name = "MainForm";
@@ -67,11 +113,16 @@
             Load += MainForm_Load;
             ((System.ComponentModel.ISupportInitialize)tableDataGridView).EndInit();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
 
         private DataGridView tableDataGridView;
         private ComboBox TableSelectComboBox;
+        private Button AddRowButton;
+        private Button FilterButton;
+        private Label FilterStatusLabel;
+        private Button ResetFilterButton;
     }
 }

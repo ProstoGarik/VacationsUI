@@ -3,6 +3,7 @@ using System.Diagnostics;
 
 namespace ClassLibrary
 {
+    /// <summary>Управление подключением к базе Access.</summary>
     public class ConnectionManager
     {
         private string connectionString;
@@ -15,6 +16,7 @@ namespace ClassLibrary
         public string CurrentDbPath => currentDbPath;
         public string CurrentDbPassword => currentDbPassword;
 
+        /// <summary>Подключается к базе по пути и паролю.</summary>
         public bool ConnectToDatabase(string dbPath, string dbPassword)
         {
             string ConnectionString = $"Provider=Microsoft.ACE.OLEDB.16.0;Data Source={dbPath};";
