@@ -41,6 +41,8 @@
             FilteredColumnComboBox3 = new ComboBox();
             SortedColumnComboBox = new ComboBox();
             SortingMethodComboBox = new ComboBox();
+            ResetFilterButton = new Button();
+            ResetSortButton = new Button();
             SuspendLayout();
             // 
             // FilteredColumnComboBox
@@ -133,7 +135,7 @@
             // SortedColumnComboBox
             // 
             SortedColumnComboBox.FormattingEnabled = true;
-            SortedColumnComboBox.Location = new Point(12, 226);
+            SortedColumnComboBox.Location = new Point(12, 253);
             SortedColumnComboBox.Name = "SortedColumnComboBox";
             SortedColumnComboBox.Size = new Size(362, 28);
             SortedColumnComboBox.TabIndex = 11;
@@ -141,16 +143,36 @@
             // SortingMethodComboBox
             // 
             SortingMethodComboBox.FormattingEnabled = true;
-            SortingMethodComboBox.Location = new Point(397, 226);
+            SortingMethodComboBox.Location = new Point(397, 253);
             SortingMethodComboBox.Name = "SortingMethodComboBox";
             SortingMethodComboBox.Size = new Size(376, 28);
             SortingMethodComboBox.TabIndex = 12;
+            // 
+            // ResetFilterButton
+            // 
+            ResetFilterButton.Location = new Point(12, 173);
+            ResetFilterButton.Name = "ResetFilterButton";
+            ResetFilterButton.Size = new Size(192, 54);
+            ResetFilterButton.TabIndex = 13;
+            ResetFilterButton.Text = "Сбросить фильтр";
+            ResetFilterButton.UseVisualStyleBackColor = true;
+            // 
+            // ResetSortButton
+            // 
+            ResetSortButton.Location = new Point(12, 287);
+            ResetSortButton.Name = "ResetSortButton";
+            ResetSortButton.Size = new Size(192, 54);
+            ResetSortButton.TabIndex = 14;
+            ResetSortButton.Text = "Сбросить сортировку";
+            ResetSortButton.UseVisualStyleBackColor = true;
             // 
             // SortFilterForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(ResetSortButton);
+            Controls.Add(ResetFilterButton);
             Controls.Add(SortingMethodComboBox);
             Controls.Add(SortedColumnComboBox);
             Controls.Add(FilterValueTextBox3);
@@ -185,5 +207,7 @@
         private ComboBox FilteredColumnComboBox3;
         private ComboBox SortedColumnComboBox;
         private ComboBox SortingMethodComboBox;
+        private Button ResetFilterButton;
+        private Button ResetSortButton;
     }
 }

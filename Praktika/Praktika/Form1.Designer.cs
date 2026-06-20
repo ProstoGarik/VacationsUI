@@ -34,6 +34,7 @@
             FilterButton = new Button();
             FilterStatusLabel = new Label();
             ResetFilterButton = new Button();
+            SortStatusLabel = new Label();
             ((System.ComponentModel.ISupportInitialize)tableDataGridView).BeginInit();
             SuspendLayout();
             // 
@@ -94,14 +95,25 @@
             ResetFilterButton.Name = "ResetFilterButton";
             ResetFilterButton.Size = new Size(162, 38);
             ResetFilterButton.TabIndex = 5;
-            ResetFilterButton.Text = "Сбросить фильтр";
+            ResetFilterButton.Text = "Сбросить";
             ResetFilterButton.UseVisualStyleBackColor = true;
+            ResetFilterButton.Click += ResetFilterButton_Click;
+            // 
+            // SortStatusLabel
+            // 
+            SortStatusLabel.AutoSize = true;
+            SortStatusLabel.Location = new Point(413, 413);
+            SortStatusLabel.Name = "SortStatusLabel";
+            SortStatusLabel.Size = new Size(178, 20);
+            SortStatusLabel.TabIndex = 6;
+            SortStatusLabel.Text = "Сортировка: Отсутствует";
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(942, 493);
+            Controls.Add(SortStatusLabel);
             Controls.Add(ResetFilterButton);
             Controls.Add(FilterStatusLabel);
             Controls.Add(FilterButton);
@@ -124,5 +136,6 @@
         private Button FilterButton;
         private Label FilterStatusLabel;
         private Button ResetFilterButton;
+        private Label SortStatusLabel;
     }
 }

@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
+using ClassLibrary;
 
 namespace Praktika
 {
@@ -210,14 +212,26 @@ namespace Praktika
             tableDataGridView.DataSource = viewModel.VacationsData;
             AddActionButtons();
             AutoResizeColumns();
-            UpdateFilterStatusLabel();
+            UpdateStatusLabels();
         }
 
-        private void UpdateFilterStatusLabel()
+        private void UpdateStatusLabels()
         {
-            FilterStatusLabel.Text = string.IsNullOrEmpty(viewModel.FilterDescription)
-                ? "Фильтр: Отсутствует"
-                : $"Фильтр: {viewModel.FilterDescription}";
+            FilterStatusLabel.Text = viewModel.IsFilterActive
+                ? "Фильтр: Применяется"
+                : "Фильтр: Отсутствует";
+            SortStatusLabel.Text = viewModel.IsSortActive
+                ? "Сортировка: Применяется"
+                : "Сортировка: Отсутствует";
+        }
+
+        private void ResetFilterButton_Click(object sender, EventArgs e)
+        {
+            if (viewModel.VacationsData == null)
+                return;
+
+            viewModel.ClearFilter();
+            BindTableData();
         }
     }
 }

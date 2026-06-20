@@ -39,32 +39,55 @@ namespace ClassLibrary
             return dataTable;
         }
 
-        /// <summary>Загружает таблицу с фильтром по столбцу. Возвращает null при ошибке.</summary>
-        public DataTable GetFilteredTable(string table, string dbPath, string dbPassword,
-            string column, string operation, string value)
+        /// <summary>Загружает таблицу с фильтрацией и/или сортировкой. Возвращает null при ошибке.</summary>
+        public DataTable GetTableQuery(string table, string dbPath, string dbPassword,
+            IReadOnlyList<FilterCondition> filters, SortCondition sort)
         {
-            if (!AllowedFilterOperations.Contains(operation))
-                return null;
-
             bool connected = connectionManager.ConnectToDatabase(dbPath, dbPassword);
             if (!connected)
                 return null;
 
-            OleDbType? columnType = GetColumnOleDbType(table, column);
-            if (columnType == null)
-                return null;
+            var parameters = new List<OleDbParameter>();
+            string query = $"SELECT * FROM [{table}]";
 
-            object paramValue = ConvertFilterValue(value, columnType.Value);
-            string sqlOperation = operation == "!=" ? "<>" : operation;
-            string query = $"SELECT * FROM [{table}] WHERE [{column}] {sqlOperation} ?";
+            if (filters != null && filters.Count > 0)
+            {
+                var clauses = new List<string>();
+                foreach (var filter in filters)
+                {
+                    if (!AllowedFilterOperations.Contains(filter.Operation))
+                        return null;
+
+                    OleDbType? columnType = GetColumnOleDbType(table, filter.Column);
+                    if (columnType == null)
+                        return null;
+
+                    string sqlOperation = filter.Operation == "!=" ? "<>" : filter.Operation;
+                    clauses.Add($"[{filter.Column}] {sqlOperation} ?");
+
+                    var param = new OleDbParameter("?", ConvertFilterValue(filter.Value, columnType.Value) ?? DBNull.Value);
+                    param.OleDbType = columnType.Value;
+                    parameters.Add(param);
+                }
+                query += " WHERE " + string.Join(" AND ", clauses);
+            }
+
+            if (sort != null)
+            {
+                OleDbType? sortColumnType = GetColumnOleDbType(table, sort.Column);
+                if (sortColumnType == null)
+                    return null;
+
+                query += $" ORDER BY [{sort.Column}] {(sort.Ascending ? "ASC" : "DESC")}";
+            }
 
             DataTable dataTable = new DataTable();
             using (OleDbConnection conn = new OleDbConnection(connectionManager.ConnectionString))
             using (OleDbCommand cmd = new OleDbCommand(query, conn))
             {
-                var param = new OleDbParameter("?", paramValue ?? DBNull.Value);
-                param.OleDbType = columnType.Value;
-                cmd.Parameters.Add(param);
+                if (parameters.Count > 0)
+                    cmd.Parameters.AddRange(parameters.ToArray());
+
                 using (OleDbDataAdapter adapter = new OleDbDataAdapter(cmd))
                 {
                     adapter.Fill(dataTable);

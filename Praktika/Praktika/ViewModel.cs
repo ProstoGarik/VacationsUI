@@ -7,12 +7,22 @@ namespace Praktika
     public class ViewModel
     {
         private DataManager dataManager;
+        private List<FilterCondition> activeFilters = new();
+        private SortCondition activeSort;
+        private List<FilterCondition> savedFormFilters = new();
+        private SortCondition savedFormSort;
+
         public DataTable VacationsData { get; private set; }
 
         public string CurrentTable { get; private set; }
         public string CurrentDbPath { get; private set; }
         public string CurrentDbPassword { get; private set; }
-        public string FilterDescription { get; private set; }
+        public bool IsFilterActive { get; private set; }
+        public bool IsSortActive { get; private set; }
+        public IReadOnlyList<FilterCondition> SavedFormFilters => savedFormFilters;
+        public SortCondition SavedFormSort => savedFormSort;
+        public IReadOnlyList<FilterCondition> ActiveFilters => activeFilters;
+        public SortCondition ActiveSort => activeSort;
 
         public ViewModel()
         {
@@ -25,21 +35,62 @@ namespace Praktika
             CurrentTable = table;
             CurrentDbPath = dbPath;
             CurrentDbPassword = dbPassword;
+            activeFilters.Clear();
+            activeSort = null;
+            savedFormFilters.Clear();
+            savedFormSort = null;
             VacationsData = dataManager.GetTable(table, dbPath, dbPassword);
-            FilterDescription = null;
+            IsFilterActive = false;
+            IsSortActive = false;
         }
 
-        /// <summary>Применяет фильтр к текущей таблице.</summary>
-        public bool ApplyFilter(string column, string operation, string value)
+        /// <summary>Применяет фильтр и/или сортировку к текущей таблице.</summary>
+        public bool ApplyFilterAndSort(IReadOnlyList<FilterCondition> filters, SortCondition sort)
         {
-            DataTable filtered = dataManager.GetFilteredTable(
-                CurrentTable, CurrentDbPath, CurrentDbPassword, column, operation, value);
-            if (filtered == null)
+            activeFilters = filters?.ToList() ?? new List<FilterCondition>();
+            activeSort = sort;
+
+            DataTable result = dataManager.GetTableQuery(
+                CurrentTable, CurrentDbPath, CurrentDbPassword, activeFilters, activeSort);
+            if (result == null)
                 return false;
 
-            VacationsData = filtered;
-            FilterDescription = $"{column} {operation} {value}";
+            VacationsData = result;
+            IsFilterActive = activeFilters.Count > 0;
+            IsSortActive = activeSort != null;
             return true;
+        }
+
+        /// <summary>Сохраняет состояние полей формы фильтра/сортировки.</summary>
+        public void SaveFormState(IReadOnlyList<FilterCondition> filterRows, SortCondition sort)
+        {
+            savedFormFilters = filterRows?
+                .Select(f => f == null ? null : new FilterCondition
+                {
+                    Column = f.Column,
+                    Operation = f.Operation,
+                    Value = f.Value
+                })
+                .ToList() ?? new List<FilterCondition>();
+            savedFormSort = sort == null
+                ? null
+                : new SortCondition { Column = sort.Column, Ascending = sort.Ascending };
+        }
+
+        /// <summary>Сбрасывает фильтр, сохраняя сортировку.</summary>
+        public void ClearFilter()
+        {
+            activeFilters.Clear();
+            savedFormFilters.Clear();
+            ApplyFilterAndSort(activeFilters, activeSort);
+        }
+
+        /// <summary>Сбрасывает сортировку, сохраняя фильтр.</summary>
+        public void ClearSort()
+        {
+            activeSort = null;
+            savedFormSort = null;
+            ApplyFilterAndSort(activeFilters, activeSort);
         }
 
         /// <summary>Удаляет строку в БД и в загруженной таблице на форме.</summary>
@@ -62,9 +113,7 @@ namespace Praktika
         {
             bool success = dataManager.InsertRow(CurrentTable, columnValues);
             if (success)
-            {
-                LoadTable(CurrentTable, CurrentDbPath, CurrentDbPassword);
-            }
+                ReloadCurrentView();
             return success;
         }
 
@@ -88,10 +137,13 @@ namespace Praktika
         {
             bool success = dataManager.UpdateRow(table, primaryKeyColumn, primaryKeyValue, columnValues);
             if (success)
-            {
-                LoadTable(CurrentTable, CurrentDbPath, CurrentDbPassword);
-            }
+                ReloadCurrentView();
             return success;
+        }
+
+        private void ReloadCurrentView()
+        {
+            ApplyFilterAndSort(activeFilters, activeSort);
         }
     }
 }
