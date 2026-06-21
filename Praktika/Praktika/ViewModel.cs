@@ -145,5 +145,11 @@ namespace Praktika
         {
             ApplyFilterAndSort(activeFilters, activeSort);
         }
+
+        /// <summary>Выполняет пользовательский SQL-запрос с параметрами.</summary>
+        public DataTable ExecuteCustomQuery(string query, Dictionary<string, object> parameters)
+        {
+            return dataManager.ExecuteQuery(CurrentDbPath, CurrentDbPassword, query, parameters);
+        }
     }
 }

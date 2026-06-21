@@ -28,6 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
+            tabControl1 = new TabControl();
+            tablesTabPage = new TabPage();
             tableDataGridView = new DataGridView();
             TableSelectComboBox = new ComboBox();
             AddRowButton = new Button();
@@ -35,101 +37,216 @@
             FilterStatusLabel = new Label();
             ResetFilterButton = new Button();
             SortStatusLabel = new Label();
+            quieryTabPage = new TabPage();
+            quieryTableDataGridView = new DataGridView();
+            quierySelectComboBox = new ComboBox();
+            quieryFilterButton = new Button();
+            quieryFilterStatusLabel = new Label();
+            quieryResetFilterButton = new Button();
+            quierySortStatusLabel = new Label();
+            quieryParamComboBox = new ComboBox();
+            tabControl1.SuspendLayout();
+            tablesTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)tableDataGridView).BeginInit();
+            quieryTabPage.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)quieryTableDataGridView).BeginInit();
             SuspendLayout();
+            // 
+            // tabControl1
+            // 
+            tabControl1.Controls.Add(tablesTabPage);
+            tabControl1.Controls.Add(quieryTabPage);
+            tabControl1.Dock = DockStyle.Fill;
+            tabControl1.Location = new Point(0, 0);
+            tabControl1.Name = "tabControl1";
+            tabControl1.SelectedIndex = 0;
+            tabControl1.Size = new Size(942, 511);
+            tabControl1.TabIndex = 0;
+            // 
+            // tablesTabPage
+            // 
+            tablesTabPage.Controls.Add(tableDataGridView);
+            tablesTabPage.Controls.Add(TableSelectComboBox);
+            tablesTabPage.Controls.Add(AddRowButton);
+            tablesTabPage.Controls.Add(FilterButton);
+            tablesTabPage.Controls.Add(FilterStatusLabel);
+            tablesTabPage.Controls.Add(ResetFilterButton);
+            tablesTabPage.Controls.Add(SortStatusLabel);
+            tablesTabPage.Location = new Point(4, 29);
+            tablesTabPage.Name = "tablesTabPage";
+            tablesTabPage.Size = new Size(934, 478);
+            tablesTabPage.TabIndex = 0;
+            tablesTabPage.Text = "Таблицы";
+            tablesTabPage.UseVisualStyleBackColor = true;
             // 
             // tableDataGridView
             // 
             tableDataGridView.BackgroundColor = SystemColors.Control;
             tableDataGridView.BorderStyle = BorderStyle.None;
             tableDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            tableDataGridView.Location = new Point(-3, 46);
+            tableDataGridView.Location = new Point(10, 54);
             tableDataGridView.Name = "tableDataGridView";
             tableDataGridView.RowHeadersWidth = 51;
             tableDataGridView.ScrollBars = ScrollBars.Vertical;
-            tableDataGridView.Size = new Size(918, 337);
-            tableDataGridView.TabIndex = 0;
-            tableDataGridView.CellClick += TableDataGridView_CellClick;
+            tableDataGridView.Size = new Size(914, 310);
+            tableDataGridView.TabIndex = 7;
             // 
             // TableSelectComboBox
             // 
             TableSelectComboBox.FormattingEnabled = true;
-            TableSelectComboBox.Location = new Point(12, 12);
+            TableSelectComboBox.Location = new Point(10, 17);
             TableSelectComboBox.Name = "TableSelectComboBox";
             TableSelectComboBox.Size = new Size(266, 28);
-            TableSelectComboBox.TabIndex = 1;
-            TableSelectComboBox.SelectedIndexChanged += TableSelectComboBox_SelectedIndexChanged;
+            TableSelectComboBox.TabIndex = 8;
             // 
             // AddRowButton
             // 
-            AddRowButton.Location = new Point(12, 389);
+            AddRowButton.Location = new Point(10, 370);
             AddRowButton.Name = "AddRowButton";
             AddRowButton.Size = new Size(204, 92);
-            AddRowButton.TabIndex = 2;
+            AddRowButton.TabIndex = 9;
             AddRowButton.Text = "Добавить данные";
             AddRowButton.UseVisualStyleBackColor = true;
-            AddRowButton.Click += AddRowButton_Click;
             // 
             // FilterButton
             // 
-            FilterButton.Location = new Point(245, 389);
+            FilterButton.Location = new Point(243, 370);
             FilterButton.Name = "FilterButton";
             FilterButton.Size = new Size(162, 48);
-            FilterButton.TabIndex = 3;
-            FilterButton.Text = "Фильтр";
+            FilterButton.TabIndex = 10;
+            FilterButton.Text = "Фильтр и сортировка";
             FilterButton.UseVisualStyleBackColor = true;
-            FilterButton.Click += FilterButton_Click;
             // 
             // FilterStatusLabel
             // 
             FilterStatusLabel.AutoSize = true;
-            FilterStatusLabel.Location = new Point(413, 389);
+            FilterStatusLabel.Location = new Point(411, 370);
             FilterStatusLabel.Name = "FilterStatusLabel";
             FilterStatusLabel.Size = new Size(146, 20);
-            FilterStatusLabel.TabIndex = 4;
+            FilterStatusLabel.TabIndex = 11;
             FilterStatusLabel.Text = "Фильтр: Отсутствует";
             // 
             // ResetFilterButton
             // 
-            ResetFilterButton.Location = new Point(245, 443);
+            ResetFilterButton.Location = new Point(243, 424);
             ResetFilterButton.Name = "ResetFilterButton";
             ResetFilterButton.Size = new Size(162, 38);
-            ResetFilterButton.TabIndex = 5;
+            ResetFilterButton.TabIndex = 12;
             ResetFilterButton.Text = "Сбросить";
             ResetFilterButton.UseVisualStyleBackColor = true;
-            ResetFilterButton.Click += ResetFilterButton_Click;
             // 
             // SortStatusLabel
             // 
             SortStatusLabel.AutoSize = true;
-            SortStatusLabel.Location = new Point(413, 413);
+            SortStatusLabel.Location = new Point(411, 394);
             SortStatusLabel.Name = "SortStatusLabel";
             SortStatusLabel.Size = new Size(178, 20);
-            SortStatusLabel.TabIndex = 6;
+            SortStatusLabel.TabIndex = 13;
             SortStatusLabel.Text = "Сортировка: Отсутствует";
+            // 
+            // quieryTabPage
+            // 
+            quieryTabPage.Controls.Add(quieryParamComboBox);
+            quieryTabPage.Controls.Add(quieryTableDataGridView);
+            quieryTabPage.Controls.Add(quierySelectComboBox);
+            quieryTabPage.Controls.Add(quieryFilterButton);
+            quieryTabPage.Controls.Add(quieryFilterStatusLabel);
+            quieryTabPage.Controls.Add(quieryResetFilterButton);
+            quieryTabPage.Controls.Add(quierySortStatusLabel);
+            quieryTabPage.Location = new Point(4, 29);
+            quieryTabPage.Name = "quieryTabPage";
+            quieryTabPage.Padding = new Padding(3);
+            quieryTabPage.Size = new Size(934, 478);
+            quieryTabPage.TabIndex = 1;
+            quieryTabPage.Text = "Запросы";
+            quieryTabPage.UseVisualStyleBackColor = true;
+            // 
+            // quieryTableDataGridView
+            // 
+            quieryTableDataGridView.BackgroundColor = SystemColors.Control;
+            quieryTableDataGridView.BorderStyle = BorderStyle.None;
+            quieryTableDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            quieryTableDataGridView.Location = new Point(10, 54);
+            quieryTableDataGridView.Name = "quieryTableDataGridView";
+            quieryTableDataGridView.RowHeadersWidth = 51;
+            quieryTableDataGridView.ScrollBars = ScrollBars.Vertical;
+            quieryTableDataGridView.Size = new Size(914, 310);
+            quieryTableDataGridView.TabIndex = 14;
+            // 
+            // quierySelectComboBox
+            // 
+            quierySelectComboBox.FormattingEnabled = true;
+            quierySelectComboBox.Location = new Point(10, 17);
+            quierySelectComboBox.Name = "quierySelectComboBox";
+            quierySelectComboBox.Size = new Size(266, 28);
+            quierySelectComboBox.TabIndex = 15;
+            // 
+            // quieryFilterButton
+            // 
+            quieryFilterButton.Location = new Point(243, 370);
+            quieryFilterButton.Name = "quieryFilterButton";
+            quieryFilterButton.Size = new Size(162, 48);
+            quieryFilterButton.TabIndex = 17;
+            quieryFilterButton.Text = "Фильтр и сортировка";
+            quieryFilterButton.UseVisualStyleBackColor = true;
+            // 
+            // quieryFilterStatusLabel
+            // 
+            quieryFilterStatusLabel.AutoSize = true;
+            quieryFilterStatusLabel.Location = new Point(411, 370);
+            quieryFilterStatusLabel.Name = "quieryFilterStatusLabel";
+            quieryFilterStatusLabel.Size = new Size(146, 20);
+            quieryFilterStatusLabel.TabIndex = 18;
+            quieryFilterStatusLabel.Text = "Фильтр: Отсутствует";
+            // 
+            // quieryResetFilterButton
+            // 
+            quieryResetFilterButton.Location = new Point(243, 424);
+            quieryResetFilterButton.Name = "quieryResetFilterButton";
+            quieryResetFilterButton.Size = new Size(162, 38);
+            quieryResetFilterButton.TabIndex = 19;
+            quieryResetFilterButton.Text = "Сбросить";
+            quieryResetFilterButton.UseVisualStyleBackColor = true;
+            // 
+            // quierySortStatusLabel
+            // 
+            quierySortStatusLabel.AutoSize = true;
+            quierySortStatusLabel.Location = new Point(411, 394);
+            quierySortStatusLabel.Name = "quierySortStatusLabel";
+            quierySortStatusLabel.Size = new Size(178, 20);
+            quierySortStatusLabel.TabIndex = 20;
+            quierySortStatusLabel.Text = "Сортировка: Отсутствует";
+            // 
+            // quieryParamComboBox
+            // 
+            quieryParamComboBox.FormattingEnabled = true;
+            quieryParamComboBox.Location = new Point(323, 17);
+            quieryParamComboBox.Name = "quieryParamComboBox";
+            quieryParamComboBox.Size = new Size(266, 28);
+            quieryParamComboBox.TabIndex = 21;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(942, 493);
-            Controls.Add(SortStatusLabel);
-            Controls.Add(ResetFilterButton);
-            Controls.Add(FilterStatusLabel);
-            Controls.Add(FilterButton);
-            Controls.Add(AddRowButton);
-            Controls.Add(TableSelectComboBox);
-            Controls.Add(tableDataGridView);
+            ClientSize = new Size(942, 511);
+            Controls.Add(tabControl1);
             Name = "MainForm";
             Text = "Отпуска рабочих";
             Load += MainForm_Load;
+            tabControl1.ResumeLayout(false);
+            tablesTabPage.ResumeLayout(false);
+            tablesTabPage.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)tableDataGridView).EndInit();
+            quieryTabPage.ResumeLayout(false);
+            quieryTabPage.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)quieryTableDataGridView).EndInit();
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
-
+        private TabControl tabControl1;
+        private TabPage tablesTabPage;
         private DataGridView tableDataGridView;
         private ComboBox TableSelectComboBox;
         private Button AddRowButton;
@@ -137,5 +254,13 @@
         private Label FilterStatusLabel;
         private Button ResetFilterButton;
         private Label SortStatusLabel;
+        private TabPage quieryTabPage;
+        private DataGridView quieryTableDataGridView;
+        private ComboBox quierySelectComboBox;
+        private Button quieryFilterButton;
+        private Label quieryFilterStatusLabel;
+        private Button quieryResetFilterButton;
+        private Label quierySortStatusLabel;
+        private ComboBox quieryParamComboBox;
     }
 }

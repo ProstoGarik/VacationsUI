@@ -257,5 +257,32 @@ namespace ClassLibrary
                 default: return OleDbType.Variant;
             }
         }
+
+        /// <summary>Выполняет произвольный SQL-запрос с параметрами.</summary>
+        public DataTable ExecuteQuery(string dbPath, string dbPassword, string query, Dictionary<string, object> parameters = null)
+        {
+            bool connected = connectionManager.ConnectToDatabase(dbPath, dbPassword);
+            if (!connected)
+                return null;
+
+            DataTable dataTable = new DataTable();
+            using (OleDbConnection conn = new OleDbConnection(connectionManager.ConnectionString))
+            using (OleDbCommand cmd = new OleDbCommand(query, conn))
+            {
+                if (parameters != null)
+                {
+                    foreach (var kvp in parameters)
+                    {
+                        cmd.Parameters.AddWithValue("@" + kvp.Key, kvp.Value ?? DBNull.Value);
+                    }
+                }
+                conn.Open();
+                using (OleDbDataAdapter adapter = new OleDbDataAdapter(cmd))
+                {
+                    adapter.Fill(dataTable);
+                }
+            }
+            return dataTable;
+        }
     }
 }
