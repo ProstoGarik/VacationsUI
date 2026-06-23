@@ -38,13 +38,13 @@
             ResetFilterButton = new Button();
             SortStatusLabel = new Label();
             quieryTabPage = new TabPage();
+            quieryParamComboBox = new ComboBox();
             quieryTableDataGridView = new DataGridView();
             quierySelectComboBox = new ComboBox();
             quieryFilterButton = new Button();
             quieryFilterStatusLabel = new Label();
             quieryResetFilterButton = new Button();
             quierySortStatusLabel = new Label();
-            quieryParamComboBox = new ComboBox();
             tabControl1.SuspendLayout();
             tablesTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)tableDataGridView).BeginInit();
@@ -98,6 +98,7 @@
             TableSelectComboBox.Name = "TableSelectComboBox";
             TableSelectComboBox.Size = new Size(266, 28);
             TableSelectComboBox.TabIndex = 8;
+            TableSelectComboBox.SelectedIndexChanged += TableSelectComboBox_SelectedIndexChanged;
             // 
             // AddRowButton
             // 
@@ -107,6 +108,7 @@
             AddRowButton.TabIndex = 9;
             AddRowButton.Text = "Добавить данные";
             AddRowButton.UseVisualStyleBackColor = true;
+            AddRowButton.Click += AddRowButton_Click;
             // 
             // FilterButton
             // 
@@ -116,6 +118,7 @@
             FilterButton.TabIndex = 10;
             FilterButton.Text = "Фильтр и сортировка";
             FilterButton.UseVisualStyleBackColor = true;
+            FilterButton.Click += FilterButton_Click;
             // 
             // FilterStatusLabel
             // 
@@ -134,6 +137,7 @@
             ResetFilterButton.TabIndex = 12;
             ResetFilterButton.Text = "Сбросить";
             ResetFilterButton.UseVisualStyleBackColor = true;
+            ResetFilterButton.Click += ResetFilterButton_Click;
             // 
             // SortStatusLabel
             // 
@@ -161,6 +165,15 @@
             quieryTabPage.Text = "Запросы";
             quieryTabPage.UseVisualStyleBackColor = true;
             // 
+            // quieryParamComboBox
+            // 
+            quieryParamComboBox.FormattingEnabled = true;
+            quieryParamComboBox.Location = new Point(323, 17);
+            quieryParamComboBox.Name = "quieryParamComboBox";
+            quieryParamComboBox.Size = new Size(266, 28);
+            quieryParamComboBox.TabIndex = 21;
+            quieryParamComboBox.SelectedIndexChanged += quieryParamComboBox_SelectedIndexChanged;
+            // 
             // quieryTableDataGridView
             // 
             quieryTableDataGridView.BackgroundColor = SystemColors.Control;
@@ -180,6 +193,7 @@
             quierySelectComboBox.Name = "quierySelectComboBox";
             quierySelectComboBox.Size = new Size(266, 28);
             quierySelectComboBox.TabIndex = 15;
+            quierySelectComboBox.SelectedIndexChanged += quierySelectComboBox_SelectedIndexChanged;
             // 
             // quieryFilterButton
             // 
@@ -189,6 +203,7 @@
             quieryFilterButton.TabIndex = 17;
             quieryFilterButton.Text = "Фильтр и сортировка";
             quieryFilterButton.UseVisualStyleBackColor = true;
+            quieryFilterButton.Click += FilterButton_Click;
             // 
             // quieryFilterStatusLabel
             // 
@@ -207,6 +222,7 @@
             quieryResetFilterButton.TabIndex = 19;
             quieryResetFilterButton.Text = "Сбросить";
             quieryResetFilterButton.UseVisualStyleBackColor = true;
+            quieryResetFilterButton.Click += ResetFilterButton_Click;
             // 
             // quierySortStatusLabel
             // 
@@ -216,14 +232,6 @@
             quierySortStatusLabel.Size = new Size(178, 20);
             quierySortStatusLabel.TabIndex = 20;
             quierySortStatusLabel.Text = "Сортировка: Отсутствует";
-            // 
-            // quieryParamComboBox
-            // 
-            quieryParamComboBox.FormattingEnabled = true;
-            quieryParamComboBox.Location = new Point(323, 17);
-            quieryParamComboBox.Name = "quieryParamComboBox";
-            quieryParamComboBox.Size = new Size(266, 28);
-            quieryParamComboBox.TabIndex = 21;
             // 
             // MainForm
             // 
