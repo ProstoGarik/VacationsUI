@@ -3,12 +3,19 @@ using System.Data;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
 
 namespace Praktika
 {
     /// <summary>Форма добавления и редактирования записи.</summary>
     public partial class AddEditForm : Form
     {
+        private const string UsersTableName = "Users";
+        private const string RolesTableName = "Roles";
+        private const string LoginColumnName = "Login";
+        private const string PasswordHashColumnName = "PasswordHash";
+        private const string RoleIdColumnName = "RoleID";
+
         private ViewModel viewModel;
         private TableLayoutPanel tableLayoutPanel;
         private List<Control> inputControls = new List<Control>();
@@ -69,6 +76,7 @@ namespace Praktika
             {
                 string colName = columnNames[i];
                 if (!EditValues.ContainsKey(colName)) continue;
+                if (IsUserPasswordColumn(colName)) continue;
 
                 object value = EditValues[colName];
                 Control control = inputControls[i];
@@ -91,6 +99,10 @@ namespace Praktika
                     {
                         comboBox.Text = value.ToString();
                     }
+                }
+                else if (control is CheckBox checkBox)
+                {
+                    checkBox.Checked = value != DBNull.Value && Convert.ToBoolean(value);
                 }
             }
         }
@@ -119,6 +131,15 @@ namespace Praktika
                     DisplayColumn = "ФИО Руководителя"
                 };
             }
+            else if (currentTable == UsersTableName)
+            {
+                foreignKeys[RoleIdColumnName] = new ForeignKeyInfo
+                {
+                    ForeignTable = RolesTableName,
+                    ValueColumn = "ID",
+                    DisplayColumn = "RoleName"
+                };
+            }
         }
 
         private void GenerateFields()
@@ -145,7 +166,7 @@ namespace Praktika
 
                 Label label = new Label
                 {
-                    Text = colName,
+                    Text = IsUserPasswordColumn(colName) ? "Пароль" : colName,
                     AutoSize = true,
                     TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
                     Dock = DockStyle.Fill
@@ -165,12 +186,23 @@ namespace Praktika
                     LoadComboBoxData(comboBox, fk);
                     inputControl = comboBox;
                 }
+                else if (column.DataType == typeof(bool))
+                {
+                    CheckBox checkBox = new CheckBox
+                    {
+                        Name = "chk" + colName,
+                        Dock = DockStyle.Fill,
+                        CheckAlign = System.Drawing.ContentAlignment.MiddleLeft
+                    };
+                    inputControl = checkBox;
+                }
                 else
                 {
                     TextBox textBox = new TextBox
                     {
                         Name = "txt" + colName,
-                        Dock = DockStyle.Fill
+                        Dock = DockStyle.Fill,
+                        UseSystemPasswordChar = IsUserPasswordColumn(colName)
                     };
                     inputControl = textBox;
                 }
@@ -261,6 +293,10 @@ namespace Praktika
                         }
                         value = ((ComboItem)comboBox.SelectedItem).Value;
                     }
+                    else if (control is CheckBox checkBox)
+                    {
+                        value = checkBox.Checked;
+                    }
                     else if (control is TextBox textBox)
                     {
                         string text = textBox.Text.Trim();
@@ -277,10 +313,16 @@ namespace Praktika
                     values.Add(colName, value);
                 }
 
+                DebugWriteFormValues(values);
+
                 bool success;
                 if (IsEditMode)
                 {
                     success = viewModel.UpdateRow(viewModel.CurrentTable, primaryKeyName, PrimaryKeyValue, values);
+                }
+                else if (viewModel.CurrentTable == UsersTableName)
+                {
+                    success = CreateUser(values);
                 }
                 else
                 {
@@ -295,6 +337,72 @@ namespace Praktika
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private bool CreateUser(Dictionary<string, object> values)
+        {
+            string login = GetRequiredTextValue(values, LoginColumnName, "логин");
+            string password = GetRequiredTextValue(values, PasswordHashColumnName, "пароль");
+
+            if (string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password))
+                return false;
+
+            if (!values.TryGetValue(RoleIdColumnName, out object roleValue) || roleValue == DBNull.Value)
+            {
+                MessageBox.Show("Выберите роль пользователя.", "Ошибка",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            if (viewModel.UserExists(login))
+            {
+                MessageBox.Show("Пользователь с таким логином уже существует.", "Ошибка",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            int roleId = Convert.ToInt32(roleValue);
+            viewModel.CreateUser(login, password, roleId);
+            return true;
+        }
+
+        private static string GetRequiredTextValue(Dictionary<string, object> values, string columnName, string fieldName)
+        {
+            if (!values.TryGetValue(columnName, out object value) || value == DBNull.Value)
+            {
+                MessageBox.Show($"Введите {fieldName}.", "Ошибка",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return string.Empty;
+            }
+
+            string text = value?.ToString()?.Trim() ?? string.Empty;
+            if (string.IsNullOrEmpty(text))
+            {
+                MessageBox.Show($"Введите {fieldName}.", "Ошибка",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
+            return text;
+        }
+
+        private bool IsUserPasswordColumn(string columnName)
+        {
+            return viewModel?.CurrentTable == UsersTableName && columnName == PasswordHashColumnName;
+        }
+
+        private void DebugWriteFormValues(Dictionary<string, object> values)
+        {
+            Debug.WriteLine($"[AddEditForm] Save requested. Table='{viewModel.CurrentTable}', IsEditMode='{IsEditMode}'.");
+            foreach (var item in values)
+            {
+                object value = item.Value;
+                string clrType = value == null || value == DBNull.Value ? "null" : value.GetType().FullName;
+                string text = item.Key.Contains("Password", StringComparison.OrdinalIgnoreCase)
+                    ? "<redacted>"
+                    : value?.ToString() ?? "null";
+
+                Debug.WriteLine($"[AddEditForm]   {item.Key}: ClrType='{clrType}', Value='{text}'");
             }
         }
 

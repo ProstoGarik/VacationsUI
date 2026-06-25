@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Data.OleDb;
+using System.Diagnostics;
 
 namespace ClassLibrary
 {
@@ -122,6 +123,7 @@ namespace ClassLibrary
                 schema = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, table, null });
                 conn.Close();
             }
+            DebugWriteSchema(table, schema);
 
             var columns = new List<string>();
             var parameters = new List<OleDbParameter>();
@@ -134,14 +136,19 @@ namespace ClassLibrary
 
                 DataRow[] rows = schema.Select($"COLUMN_NAME = '{kvp.Key}'");
                 if (rows.Length == 0)
+                {
+                    Debug.WriteLine($"[DataManager] InsertRow skipped unknown column '{kvp.Key}' for table '{table}'.");
                     continue;
+                }
 
-                string dataType = rows[0]["DATA_TYPE"].ToString();
-                OleDbType oleDbType = MapDataType(dataType);
+                OleDbType oleDbType = MapDataType(rows[0]["DATA_TYPE"]);
 
                 columns.Add($"[{kvp.Key}]");
-                var param = new OleDbParameter("?", kvp.Value ?? DBNull.Value);
-                param.OleDbType = oleDbType;
+                var param = new OleDbParameter("?", ConvertParameterValue(kvp.Value, oleDbType))
+                {
+                    OleDbType = oleDbType,
+                    SourceColumn = kvp.Key
+                };
                 parameters.Add(param);
             }
 
@@ -153,9 +160,19 @@ namespace ClassLibrary
             using (var cmd = new OleDbCommand(query, conn))
             {
                 cmd.Parameters.AddRange(parameters.ToArray());
-                conn.Open();
-                int affected = cmd.ExecuteNonQuery();
-                return affected > 0;
+                try
+                {
+                    DebugWriteCommand("InsertRow", table, query, cmd.Parameters);
+                    conn.Open();
+                    int affected = cmd.ExecuteNonQuery();
+                    Debug.WriteLine($"[DataManager] InsertRow affected rows: {affected}");
+                    return affected > 0;
+                }
+                catch (OleDbException ex)
+                {
+                    DebugWriteOleDbException("InsertRow", table, query, cmd.Parameters, ex);
+                    throw;
+                }
             }
         }
 
@@ -218,7 +235,7 @@ namespace ClassLibrary
                 DataRow[] rows = schema.Select($"COLUMN_NAME = '{column}'");
                 if (rows.Length == 0)
                     return null;
-                return MapDataType(rows[0]["DATA_TYPE"].ToString());
+                return MapDataType(rows[0]["DATA_TYPE"]);
             }
         }
 
@@ -243,9 +260,13 @@ namespace ClassLibrary
         }
 
         /// <summary>Соответствие типов столбцов Access и OleDb.</summary>
-        private OleDbType MapDataType(string dataType)
+        private OleDbType MapDataType(object dataType)
         {
-            switch (dataType)
+            string dataTypeText = dataType?.ToString() ?? string.Empty;
+            if (int.TryParse(dataTypeText, out int oleDbTypeCode))
+                return NormalizeOleDbType((OleDbType)oleDbTypeCode);
+
+            switch (dataTypeText)
             {
                 case "DBTYPE_I4": return OleDbType.Integer;
                 case "DBTYPE_I8": return OleDbType.BigInt;
@@ -255,6 +276,44 @@ namespace ClassLibrary
                 case "DBTYPE_BSTR": return OleDbType.VarWChar;
                 case "DBTYPE_BOOL": return OleDbType.Boolean;
                 default: return OleDbType.Variant;
+            }
+        }
+
+        private static OleDbType NormalizeOleDbType(OleDbType oleDbType)
+        {
+            switch (oleDbType)
+            {
+                case OleDbType.WChar:
+                    return OleDbType.VarWChar;
+                case OleDbType.Char:
+                    return OleDbType.VarChar;
+                default:
+                    return oleDbType;
+            }
+        }
+
+        private static object ConvertParameterValue(object value, OleDbType oleDbType)
+        {
+            if (value == null || value == DBNull.Value)
+                return DBNull.Value;
+
+            switch (oleDbType)
+            {
+                case OleDbType.Boolean:
+                    return Convert.ToBoolean(value);
+                case OleDbType.Integer:
+                    return Convert.ToInt32(value);
+                case OleDbType.BigInt:
+                    return Convert.ToInt64(value);
+                case OleDbType.Double:
+                case OleDbType.Currency:
+                    return Convert.ToDouble(value);
+                case OleDbType.Date:
+                case OleDbType.DBDate:
+                case OleDbType.DBTimeStamp:
+                    return Convert.ToDateTime(value);
+                default:
+                    return value;
             }
         }
 
@@ -283,6 +342,89 @@ namespace ClassLibrary
                 }
             }
             return dataTable;
+        }
+
+        private static void DebugWriteSchema(string table, DataTable schema)
+        {
+            Debug.WriteLine($"[DataManager] Schema for table '{table}':");
+            if (schema == null)
+            {
+                Debug.WriteLine("[DataManager]   Schema is null.");
+                return;
+            }
+
+            foreach (DataRow row in schema.Rows)
+            {
+                Debug.WriteLine(
+                    "[DataManager]   " +
+                    $"Column='{row["COLUMN_NAME"]}', " +
+                    $"DATA_TYPE='{row["DATA_TYPE"]}', " +
+                    $"TYPE_NAME='{GetSchemaValue(row, "TYPE_NAME")}', " +
+                    $"IS_NULLABLE='{GetSchemaValue(row, "IS_NULLABLE")}', " +
+                    $"ORDINAL_POSITION='{GetSchemaValue(row, "ORDINAL_POSITION")}'");
+            }
+        }
+
+        private static object GetSchemaValue(DataRow row, string column)
+        {
+            return row.Table.Columns.Contains(column) ? row[column] : string.Empty;
+        }
+
+        private static void DebugWriteCommand(string operation, string table, string query, OleDbParameterCollection parameters)
+        {
+            Debug.WriteLine($"[DataManager] {operation}");
+            Debug.WriteLine($"[DataManager]   Table: {table}");
+            Debug.WriteLine($"[DataManager]   Query: {query}");
+            Debug.WriteLine($"[DataManager]   Parameters count: {parameters.Count}");
+
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                OleDbParameter parameter = parameters[i];
+                object value = parameter.Value;
+                string clrType = value == null || value == DBNull.Value ? "null" : value.GetType().FullName;
+
+                Debug.WriteLine(
+                    "[DataManager]   " +
+                    $"Param[{i}], " +
+                    $"Column='{parameter.SourceColumn}', " +
+                    $"OleDbType='{parameter.OleDbType}', " +
+                    $"DbType='{parameter.DbType}', " +
+                    $"ClrType='{clrType}', " +
+                    $"Value='{FormatParameterValue(parameter)}'");
+            }
+        }
+
+        private static string FormatParameterValue(OleDbParameter parameter)
+        {
+            if (!string.IsNullOrEmpty(parameter.SourceColumn)
+                && parameter.SourceColumn.Contains("Password", StringComparison.OrdinalIgnoreCase))
+                return "<redacted>";
+
+            object value = parameter.Value;
+            if (value == null || value == DBNull.Value)
+                return "DBNull";
+
+            return value.ToString();
+        }
+
+        private static void DebugWriteOleDbException(string operation, string table, string query,
+            OleDbParameterCollection parameters, OleDbException ex)
+        {
+            Debug.WriteLine($"[DataManager] {operation} failed for table '{table}'.");
+            DebugWriteCommand(operation + " failed command", table, query, parameters);
+            Debug.WriteLine($"[DataManager]   Exception: {ex}");
+
+            for (int i = 0; i < ex.Errors.Count; i++)
+            {
+                OleDbError error = ex.Errors[i];
+                Debug.WriteLine(
+                    "[DataManager]   " +
+                    $"OleDbError[{i}], " +
+                    $"NativeError='{error.NativeError}', " +
+                    $"SQLState='{error.SQLState}', " +
+                    $"Source='{error.Source}', " +
+                    $"Message='{error.Message}'");
+            }
         }
     }
 }

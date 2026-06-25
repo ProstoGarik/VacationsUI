@@ -9,12 +9,37 @@ namespace Praktika
 {
     public partial class MainForm : Form
     {
-        private ViewModel viewModel;
+        private const string UsersTableName = "Users";
+        private const string RolesTableName = "Roles";
 
-        public MainForm()
+        private ViewModel viewModel;
+        private readonly AuthenticatedUser? currentUser;
+
+        public MainForm() : this(null)
+        {
+        }
+
+        public MainForm(AuthenticatedUser? currentUser)
         {
             InitializeComponent();
+            this.currentUser = currentUser;
             viewModel = new ViewModel();
+            ConfigureDataGridViews();
+        }
+
+        private void ConfigureDataGridViews()
+        {
+            ConfigureReadOnlyDataGridView(tableDataGridView);
+            ConfigureReadOnlyDataGridView(quieryTableDataGridView);
+        }
+
+        private static void ConfigureReadOnlyDataGridView(DataGridView dataGridView)
+        {
+            dataGridView.ReadOnly = true;
+            dataGridView.AllowUserToAddRows = false;
+            dataGridView.AllowUserToDeleteRows = false;
+            dataGridView.EditMode = DataGridViewEditMode.EditProgrammatically;
+            dataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -23,6 +48,11 @@ namespace Praktika
             TableSelectComboBox.Items.Add("Отпуска");
             TableSelectComboBox.Items.Add("Рабочие");
             TableSelectComboBox.Items.Add("Подразделения");
+            if (CanEditUsers())
+            {
+                TableSelectComboBox.Items.Add(UsersTableName);
+                TableSelectComboBox.Items.Add(RolesTableName);
+            }
 
             // Загружаем первую таблицу, чтобы установить путь к БД
             TableSelectComboBox.SelectedIndex = 0;
@@ -35,6 +65,8 @@ namespace Praktika
             // Подписываем события
             quierySelectComboBox.SelectedIndexChanged += quierySelectComboBox_SelectedIndexChanged;
             quieryParamComboBox.SelectedIndexChanged += quieryParamComboBox_SelectedIndexChanged;
+
+            ApplyUserPermissions();
         }
 
         private void TableSelectComboBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -44,24 +76,17 @@ namespace Praktika
 
         private void RefreshTable()
         {
-            switch (TableSelectComboBox.SelectedIndex)
-            {
-                case 0:
-                    LoadTable("Отпуска");
-                    break;
-                case 1:
-                    LoadTable("Рабочие");
-                    break;
-                case 2:
-                    LoadTable("Подразделения");
-                    break;
-            }
+            string selectedTable = TableSelectComboBox.SelectedItem?.ToString();
+            if (string.IsNullOrEmpty(selectedTable))
+                return;
+
+            LoadTable(selectedTable);
         }
 
         private void LoadTable(string table)
         {
-            string dbPath = @"C:\Users\ediga\OneDrive\Документы\ОтпускаРабочихТолькоТаблицы.accdb";
-            string dbPassword = string.Empty;
+            string dbPath = IsAuthTable(table) ? AppSettings.AuthDbPath : AppSettings.DataDbPath;
+            string dbPassword = IsAuthTable(table) ? AppSettings.AuthDbPassword : AppSettings.DataDbPassword;
 
             viewModel.LoadTable(table, dbPath, dbPassword);
 
@@ -83,6 +108,9 @@ namespace Praktika
             if (tableDataGridView.Columns["EditButton"] != null)
                 tableDataGridView.Columns.Remove("EditButton");
 
+            if (!CanEditCurrentTable())
+                return;
+
             DataGridViewButtonColumn deleteColumn = new DataGridViewButtonColumn
             {
                 Name = "DeleteButton",
@@ -92,6 +120,11 @@ namespace Praktika
                 Width = 85,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.None
             };
+
+            tableDataGridView.Columns.Add(deleteColumn);
+
+            if (IsCurrentUsersTable())
+                return;
 
             DataGridViewButtonColumn editColumn = new DataGridViewButtonColumn
             {
@@ -103,7 +136,6 @@ namespace Praktika
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.None
             };
 
-            tableDataGridView.Columns.Add(deleteColumn);
             tableDataGridView.Columns.Add(editColumn);
         }
 
@@ -120,6 +152,9 @@ namespace Praktika
 
         private void TableDataGridView_CellClick(object sender, DataGridViewCellEventArgs e)
         {
+            if (sender != tableDataGridView || !CanEditCurrentTable())
+                return;
+
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
 
             DataGridViewColumn clickedColumn = tableDataGridView.Columns[e.ColumnIndex];
@@ -185,6 +220,13 @@ namespace Praktika
 
         private void AddRowButton_Click(object sender, EventArgs e)
         {
+            if (!CanEditCurrentTable())
+            {
+                MessageBox.Show("У текущего пользователя нет прав на изменение выбранной таблицы.", "Доступ запрещен",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             if (viewModel.VacationsData == null)
             {
                 MessageBox.Show("Сначала выберите таблицу.", "Предупреждение",
@@ -227,6 +269,7 @@ namespace Praktika
             AddActionButtons();
             AutoResizeColumns();
             UpdateStatusLabels();
+            ApplyUserPermissions();
         }
 
         private void UpdateStatusLabels()
@@ -319,6 +362,51 @@ namespace Praktika
             {
                 MessageBox.Show("Ошибка при выполнении запроса.", "Ошибка",
                                 MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private bool CanEditData()
+        {
+            return currentUser?.CanEditData == true;
+        }
+
+        private bool CanEditUsers()
+        {
+            return currentUser?.CanEditUsers == true;
+        }
+
+        private bool IsAuthTable(string table)
+        {
+            return table == UsersTableName || table == RolesTableName;
+        }
+
+        private bool IsCurrentAuthTable()
+        {
+            string selectedTable = TableSelectComboBox.SelectedItem?.ToString();
+            return !string.IsNullOrEmpty(selectedTable) && IsAuthTable(selectedTable);
+        }
+
+        private bool IsCurrentUsersTable()
+        {
+            return TableSelectComboBox.SelectedItem?.ToString() == UsersTableName;
+        }
+
+        private bool CanEditCurrentTable()
+        {
+            return IsCurrentAuthTable() ? CanEditUsers() : CanEditData();
+        }
+
+        private void ApplyUserPermissions()
+        {
+            bool canEditCurrentTable = CanEditCurrentTable();
+            AddRowButton.Enabled = canEditCurrentTable;
+
+            if (!canEditCurrentTable)
+            {
+                if (tableDataGridView.Columns["DeleteButton"] != null)
+                    tableDataGridView.Columns.Remove("DeleteButton");
+                if (tableDataGridView.Columns["EditButton"] != null)
+                    tableDataGridView.Columns.Remove("EditButton");
             }
         }
     }

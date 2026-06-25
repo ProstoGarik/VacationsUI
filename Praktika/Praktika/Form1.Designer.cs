@@ -90,6 +90,7 @@
             tableDataGridView.ScrollBars = ScrollBars.Vertical;
             tableDataGridView.Size = new Size(914, 310);
             tableDataGridView.TabIndex = 7;
+            tableDataGridView.CellClick += TableDataGridView_CellClick;
             // 
             // TableSelectComboBox
             // 
@@ -185,6 +186,7 @@
             quieryTableDataGridView.ScrollBars = ScrollBars.Vertical;
             quieryTableDataGridView.Size = new Size(914, 310);
             quieryTableDataGridView.TabIndex = 14;
+            quieryTableDataGridView.CellClick += TableDataGridView_CellClick;
             // 
             // quierySelectComboBox
             // 

@@ -7,6 +7,7 @@ namespace Praktika
     public class ViewModel
     {
         private DataManager dataManager;
+        private AuthManager authManager;
         private List<FilterCondition> activeFilters = new();
         private SortCondition activeSort;
         private List<FilterCondition> savedFormFilters = new();
@@ -27,6 +28,77 @@ namespace Praktika
         public ViewModel()
         {
             dataManager = new DataManager();
+            authManager = new AuthManager(AppSettings.AuthDbPath);
+        }
+
+        public AuthenticatedUser? AuthenticateUser(string login, string password)
+        {
+            return authManager.Authenticate(login, password);
+        }
+
+        public List<UserInfo> GetUsers()
+        {
+            return authManager.GetUsers();
+        }
+
+        public List<RoleInfo> GetRoles()
+        {
+            return authManager.GetRoles();
+        }
+
+        public bool UserExists(string login)
+        {
+            return authManager.UserExists(login);
+        }
+
+        public int CreateUser(string login, string password, int roleId)
+        {
+            return authManager.CreateUser(login, password, roleId);
+        }
+
+        public int CreateUserWithPasswordHash(string login, string passwordHash, int roleId)
+        {
+            return authManager.CreateUserWithPasswordHash(login, passwordHash, roleId);
+        }
+
+        public bool UpdateUserLogin(int userId, string login)
+        {
+            return authManager.UpdateUserLogin(userId, login);
+        }
+
+        public bool UpdateUserPassword(int userId, string password)
+        {
+            return authManager.UpdateUserPassword(userId, password);
+        }
+
+        public bool UpdateUserRole(int userId, int roleId)
+        {
+            return authManager.UpdateUserRole(userId, roleId);
+        }
+
+        public bool DeleteUser(int userId)
+        {
+            return authManager.DeleteUser(userId);
+        }
+
+        public int CreateRole(string roleName, bool canEditUsers, bool canEditData)
+        {
+            return authManager.CreateRole(roleName, canEditUsers, canEditData);
+        }
+
+        public bool UpdateRole(int roleId, string roleName, bool canEditUsers, bool canEditData)
+        {
+            return authManager.UpdateRole(roleId, roleName, canEditUsers, canEditData);
+        }
+
+        public bool DeleteRole(int roleId)
+        {
+            return authManager.DeleteRole(roleId);
+        }
+
+        public bool HasUsers()
+        {
+            return authManager.HasUsers();
         }
 
         /// <summary>Загружает выбранную таблицу из базы.</summary>
