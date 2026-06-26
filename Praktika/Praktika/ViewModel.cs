@@ -223,5 +223,19 @@ namespace Praktika
         {
             return dataManager.ExecuteQuery(CurrentDbPath, CurrentDbPassword, query, parameters);
         }
+
+        public void DisconnectData()
+        {
+            VacationsData = null;
+            CurrentTable = null;
+            CurrentDbPath = null;
+            CurrentDbPassword = null;
+            activeFilters.Clear();
+            activeSort = null;
+            savedFormFilters.Clear();
+            savedFormSort = null;
+            IsFilterActive = false;
+            IsSortActive = false;
+        }
     }
 }

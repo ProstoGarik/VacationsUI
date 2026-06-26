@@ -7,12 +7,17 @@ namespace Praktika
         {
             ApplicationConfiguration.Initialize();
 
-            using (LoginForm loginForm = new LoginForm())
+            while (true)
             {
+                using LoginForm loginForm = new LoginForm();
                 if (loginForm.ShowDialog() != DialogResult.OK || loginForm.CurrentUser == null)
-                    return;
+                    break;
 
-                Application.Run(new MainForm(loginForm.CurrentUser));
+                using MainForm mainForm = new MainForm(loginForm.CurrentUser);
+                Application.Run(mainForm);
+
+                if (!mainForm.LogoutRequested)
+                    break;
             }
         }
     }

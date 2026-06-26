@@ -11,9 +11,13 @@ namespace Praktika
     {
         private const string UsersTableName = "Users";
         private const string RolesTableName = "Roles";
+        private string currentDataDbPath;
+        private string currentDataDbPassword;
+        private bool isDataDbConnected;
 
         private ViewModel viewModel;
         private readonly AuthenticatedUser? currentUser;
+        public bool LogoutRequested { get; private set; }
 
         public MainForm() : this(null)
         {
@@ -54,18 +58,45 @@ namespace Praktika
                 TableSelectComboBox.Items.Add(RolesTableName);
             }
 
-            // Загружаем первую таблицу, чтобы установить путь к БД
-            TableSelectComboBox.SelectedIndex = 0;
-            RefreshTable();
+            // Инициализация пути к БД из настроек
+            currentDataDbPath = null;
+            currentDataDbPassword = string.Empty;
+            isDataDbConnected = false; // временно
 
-            // Заполнение ComboBox для запросов
+            // Обновляем UI кнопки и статуса
+            UpdateConnectionUI();
+
+            // Если путь задан, пытаемся загрузить первую таблицу
+            if (!string.IsNullOrEmpty(currentDataDbPath))
+            {
+                TableSelectComboBox.SelectedIndex = 0;
+                RefreshTable();
+                isDataDbConnected = viewModel.VacationsData != null;
+                UpdateConnectionUI();
+                UpdateStatusLabels();
+            }
+            else
+            {
+                // Если путь не задан, просто выбираем первый элемент, но не загружаем
+                TableSelectComboBox.SelectedIndex = 0;
+                tableDataGridView.DataSource = null;
+                RemoveActionButtons();
+                AddRowButton.Enabled = false;
+                FilterStatusLabel.Text = "Фильтр: Отсутствует";
+                SortStatusLabel.Text = "Сортировка: Отсутствует";
+                quieryFilterStatusLabel.Text = "Фильтр: Отсутствует";
+                quierySortStatusLabel.Text = "Сортировка: Отсутствует";
+                quieryParamComboBox.DataSource = null;
+                quieryTableDataGridView.DataSource = null;
+            }
+
+            // Заполнение ComboBox для запросов (подписки уже есть в дизайнере)
             quierySelectComboBox.Items.Add("Отпуска по специальности");
-            quierySelectComboBox.SelectedIndex = 0; // автоматически вызовет событие
+            quierySelectComboBox.SelectedIndex = 0;
 
-            // Подписываем события
-            quierySelectComboBox.SelectedIndexChanged += quierySelectComboBox_SelectedIndexChanged;
-            quieryParamComboBox.SelectedIndexChanged += quieryParamComboBox_SelectedIndexChanged;
-
+            ClearDataUi();
+            tabControl1.SelectedTab = ControlTabPage;
+            UpdateConnectionUI();
             ApplyUserPermissions();
         }
 
@@ -85,11 +116,31 @@ namespace Praktika
 
         private void LoadTable(string table)
         {
-            string dbPath = IsAuthTable(table) ? AppSettings.AuthDbPath : AppSettings.DataDbPath;
-            string dbPassword = IsAuthTable(table) ? AppSettings.AuthDbPassword : AppSettings.DataDbPassword;
+            if (string.IsNullOrEmpty(currentDataDbPath))
+            {
+                ClearDataUi();
+                return;
+            }
+
+            string dbPath, dbPassword;
+            if (IsAuthTable(table))
+            {
+                dbPath = AppSettings.AuthDbPath;
+                dbPassword = AppSettings.AuthDbPassword;
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(currentDataDbPath))
+                {
+                    MessageBox.Show("База данных не подключена. Выберите файл БД на вкладке 'Управление'.", "Ошибка",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                dbPath = currentDataDbPath;
+                dbPassword = currentDataDbPassword;
+            }
 
             viewModel.LoadTable(table, dbPath, dbPassword);
-
             if (viewModel.VacationsData != null)
             {
                 BindTableData();
@@ -293,6 +344,11 @@ namespace Praktika
 
         private void quierySelectComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
+            RefreshSelectedQuery();
+        }
+
+        private void RefreshSelectedQuery()
+        {
             string selected = quierySelectComboBox.SelectedItem?.ToString();
             if (selected == "Отпуска по специальности")
             {
@@ -308,6 +364,13 @@ namespace Praktika
 
         private void LoadSpecialties()
         {
+            if (!isDataDbConnected)
+            {
+                quieryParamComboBox.DataSource = null;
+                quieryTableDataGridView.DataSource = null;
+                return;
+            }
+
             // Получаем таблицу "Рабочие" через существующий метод ViewModel
             DataTable workers = viewModel.GetTableData("Рабочие");
             if (workers != null && workers.Rows.Count > 0)
@@ -365,6 +428,99 @@ namespace Praktika
             }
         }
 
+        private void CreateReportButton_Click(object sender, EventArgs e)
+        {
+            if (quieryTableDataGridView.DataSource is not DataTable reportData || reportData.Rows.Count == 0)
+            {
+                MessageBox.Show("Нет данных для формирования отчёта.", "Отчёт",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string queryName = quierySelectComboBox.SelectedItem?.ToString() ?? "Запрос";
+            string parameter = quieryParamComboBox.SelectedItem?.ToString() ?? string.Empty;
+            string title = string.IsNullOrWhiteSpace(parameter)
+                ? queryName
+                : $"{queryName} - {parameter}";
+
+            try
+            {
+                CreateWordReport(title, reportData);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Не удалось сформировать отчёт Word: {ex.Message}", "Ошибка",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static void CreateWordReport(string title, DataTable reportData)
+        {
+            Type? wordType = Type.GetTypeFromProgID("Word.Application");
+            if (wordType == null)
+                throw new InvalidOperationException("Microsoft Word не установлен или недоступен через COM.");
+
+            dynamic wordApp = Activator.CreateInstance(wordType)
+                ?? throw new InvalidOperationException("Не удалось запустить Microsoft Word.");
+            dynamic document = wordApp.Documents.Add();
+
+            try
+            {
+                dynamic titleParagraph = document.Paragraphs.Add();
+                titleParagraph.Range.Text = title;
+                titleParagraph.Range.Font.Bold = 1;
+                titleParagraph.Range.Font.Size = 12;
+                titleParagraph.Alignment = 1; // wdAlignParagraphCenter
+                titleParagraph.Range.InsertParagraphAfter();
+
+                dynamic tableRange = document.Paragraphs.Add().Range;
+                dynamic table = document.Tables.Add(
+                    tableRange,
+                    reportData.Rows.Count + 1,
+                    reportData.Columns.Count);
+
+                table.Borders.Enable = 1;
+
+                for (int columnIndex = 0; columnIndex < reportData.Columns.Count; columnIndex++)
+                {
+                    dynamic cell = table.Cell(1, columnIndex + 1);
+                    cell.Range.Text = reportData.Columns[columnIndex].ColumnName;
+                    cell.Range.Bold = 0;
+                }
+
+                for (int rowIndex = 0; rowIndex < reportData.Rows.Count; rowIndex++)
+                {
+                    for (int columnIndex = 0; columnIndex < reportData.Columns.Count; columnIndex++)
+                    {
+                        object value = reportData.Rows[rowIndex][columnIndex];
+                        table.Cell(rowIndex + 2, columnIndex + 1).Range.Text = FormatReportValue(value);
+                    }
+                }
+
+                table.Range.Font.Bold = 0;
+                table.Range.Font.Size = 12;
+
+                table.AutoFitBehavior(1); // wdAutoFitContent
+                wordApp.Visible = true;
+            }
+            catch
+            {
+                document.Close(0); // wdDoNotSaveChanges
+                wordApp.Quit();
+                throw;
+            }
+        }
+
+        private static string FormatReportValue(object value)
+        {
+            if (value == DBNull.Value || value == null)
+                return string.Empty;
+
+            return value is DateTime dateTime
+                ? dateTime.ToString("dd.MM.yyyy")
+                : value.ToString() ?? string.Empty;
+        }
+
         private bool CanEditData()
         {
             return currentUser?.CanEditData == true;
@@ -393,6 +549,7 @@ namespace Praktika
 
         private bool CanEditCurrentTable()
         {
+            if (!isDataDbConnected) return false;
             return IsCurrentAuthTable() ? CanEditUsers() : CanEditData();
         }
 
@@ -408,6 +565,96 @@ namespace Praktika
                 if (tableDataGridView.Columns["EditButton"] != null)
                     tableDataGridView.Columns.Remove("EditButton");
             }
+        }
+
+        private void UpdateConnectionUI()
+        {
+            if (isDataDbConnected)
+            {
+                ConnectionDynamicButton.Text = "Закрыть";
+                ConnectionStatusLabel.Text = "Подключение к БД: Выполнено";
+            }
+            else
+            {
+                ConnectionDynamicButton.Text = "Выбрать файл";
+                ConnectionStatusLabel.Text = "Подключение к БД: Не выполнено";
+            }
+        }
+
+        private void RemoveActionButtons()
+        {
+            if (tableDataGridView.Columns["DeleteButton"] != null)
+                tableDataGridView.Columns.Remove("DeleteButton");
+            if (tableDataGridView.Columns["EditButton"] != null)
+                tableDataGridView.Columns.Remove("EditButton");
+        }
+
+        private void ClearDataUi()
+        {
+            tableDataGridView.DataSource = null;
+            quieryTableDataGridView.DataSource = null;
+            quieryParamComboBox.DataSource = null;
+            RemoveActionButtons();
+            AddRowButton.Enabled = false;
+            FilterStatusLabel.Text = "Фильтр: Отсутствует";
+            SortStatusLabel.Text = "Сортировка: Отсутствует";
+            quieryFilterStatusLabel.Text = "Фильтр: Отсутствует";
+            quierySortStatusLabel.Text = "Сортировка: Отсутствует";
+        }
+
+        private void DisconnectData()
+        {
+            viewModel.DisconnectData();
+            currentDataDbPath = null;
+            currentDataDbPassword = string.Empty;
+            isDataDbConnected = false;
+            ClearDataUi();
+            UpdateConnectionUI();
+            ApplyUserPermissions();
+        }
+
+        private void ConnectionDynamicButton_Click(object sender, EventArgs e)
+        {
+            if (isDataDbConnected)
+            {
+                DisconnectData();
+            }
+            else
+            {
+                // Выбор нового файла БД
+                using (OpenFileDialog ofd = new OpenFileDialog())
+                {
+                    ofd.Filter = "Файлы Access (*.accdb)|*.accdb|Все файлы (*.*)|*.*";
+                    ofd.Title = "Выберите базу данных";
+                    if (ofd.ShowDialog() == DialogResult.OK)
+                    {
+                        currentDataDbPath = ofd.FileName;
+                        currentDataDbPassword = string.Empty; // при необходимости можно запросить пароль
+                        RefreshTable(); // попытка загрузить текущую таблицу
+                        if (viewModel.VacationsData != null)
+                        {
+                            isDataDbConnected = true;
+                            UpdateConnectionUI();
+                            UpdateStatusLabels();
+                            RefreshSelectedQuery();
+                            ApplyUserPermissions();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Не удалось подключиться к выбранной базе данных или загрузить таблицу.",
+                                            "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            currentDataDbPath = null;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void LogoutButton_Click(object sender, EventArgs e)
+        {
+            DisconnectData();
+            LogoutRequested = true;
+            Close();
         }
     }
 }

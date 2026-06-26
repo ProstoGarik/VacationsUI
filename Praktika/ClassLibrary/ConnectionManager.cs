@@ -43,5 +43,14 @@ namespace ClassLibrary
                 return false;
             }
         }
+
+        /// <summary>Сбрасывает сведения о текущем подключении.</summary>
+        public void Disconnect()
+        {
+            connectionString = string.Empty;
+            currentDbPath = string.Empty;
+            currentDbPassword = string.Empty;
+            isDbConnected = false;
+        }
     }
 }

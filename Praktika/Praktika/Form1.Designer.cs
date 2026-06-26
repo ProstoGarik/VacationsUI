@@ -45,17 +45,25 @@
             quieryFilterStatusLabel = new Label();
             quieryResetFilterButton = new Button();
             quierySortStatusLabel = new Label();
+            ControlTabPage = new TabPage();
+            AccountDataLabel = new Label();
+            ConnectionStatusLabel = new Label();
+            ConnectionDynamicButton = new Button();
+            LogoutButton = new Button();
+            CreateReportButton = new Button();
             tabControl1.SuspendLayout();
             tablesTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)tableDataGridView).BeginInit();
             quieryTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)quieryTableDataGridView).BeginInit();
+            ControlTabPage.SuspendLayout();
             SuspendLayout();
             // 
             // tabControl1
             // 
             tabControl1.Controls.Add(tablesTabPage);
             tabControl1.Controls.Add(quieryTabPage);
+            tabControl1.Controls.Add(ControlTabPage);
             tabControl1.Dock = DockStyle.Fill;
             tabControl1.Location = new Point(0, 0);
             tabControl1.Name = "tabControl1";
@@ -151,6 +159,7 @@
             // 
             // quieryTabPage
             // 
+            quieryTabPage.Controls.Add(CreateReportButton);
             quieryTabPage.Controls.Add(quieryParamComboBox);
             quieryTabPage.Controls.Add(quieryTableDataGridView);
             quieryTabPage.Controls.Add(quierySelectComboBox);
@@ -235,6 +244,68 @@
             quierySortStatusLabel.TabIndex = 20;
             quierySortStatusLabel.Text = "Сортировка: Отсутствует";
             // 
+            // ControlTabPage
+            // 
+            ControlTabPage.Controls.Add(AccountDataLabel);
+            ControlTabPage.Controls.Add(ConnectionStatusLabel);
+            ControlTabPage.Controls.Add(ConnectionDynamicButton);
+            ControlTabPage.Controls.Add(LogoutButton);
+            ControlTabPage.Location = new Point(4, 29);
+            ControlTabPage.Name = "ControlTabPage";
+            ControlTabPage.Padding = new Padding(3);
+            ControlTabPage.Size = new Size(934, 478);
+            ControlTabPage.TabIndex = 2;
+            ControlTabPage.Text = "Управление";
+            ControlTabPage.UseVisualStyleBackColor = true;
+            // 
+            // AccountDataLabel
+            // 
+            AccountDataLabel.AutoSize = true;
+            AccountDataLabel.Location = new Point(342, 314);
+            AccountDataLabel.Name = "AccountDataLabel";
+            AccountDataLabel.Size = new Size(150, 20);
+            AccountDataLabel.TabIndex = 3;
+            AccountDataLabel.Text = "Выполнен вход как: ";
+            // 
+            // ConnectionStatusLabel
+            // 
+            ConnectionStatusLabel.AutoSize = true;
+            ConnectionStatusLabel.Location = new Point(342, 139);
+            ConnectionStatusLabel.Name = "ConnectionStatusLabel";
+            ConnectionStatusLabel.Size = new Size(248, 20);
+            ConnectionStatusLabel.TabIndex = 2;
+            ConnectionStatusLabel.Text = "Подключение к бд: Не выполнено";
+            // 
+            // ConnectionDynamicButton
+            // 
+            ConnectionDynamicButton.Location = new Point(342, 184);
+            ConnectionDynamicButton.Name = "ConnectionDynamicButton";
+            ConnectionDynamicButton.Size = new Size(226, 78);
+            ConnectionDynamicButton.TabIndex = 1;
+            ConnectionDynamicButton.Text = "Выбрать файл";
+            ConnectionDynamicButton.UseVisualStyleBackColor = true;
+            ConnectionDynamicButton.Click += ConnectionDynamicButton_Click;
+            // 
+            // LogoutButton
+            // 
+            LogoutButton.Location = new Point(342, 354);
+            LogoutButton.Name = "LogoutButton";
+            LogoutButton.Size = new Size(226, 74);
+            LogoutButton.TabIndex = 0;
+            LogoutButton.Text = "Выйти";
+            LogoutButton.UseVisualStyleBackColor = true;
+            LogoutButton.Click += LogoutButton_Click;
+            // 
+            // CreateReportButton
+            // 
+            CreateReportButton.Location = new Point(10, 370);
+            CreateReportButton.Name = "CreateReportButton";
+            CreateReportButton.Size = new Size(204, 92);
+            CreateReportButton.TabIndex = 22;
+            CreateReportButton.Text = "Сгенерировать отчёт";
+            CreateReportButton.UseVisualStyleBackColor = true;
+            CreateReportButton.Click += CreateReportButton_Click;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -251,6 +322,8 @@
             quieryTabPage.ResumeLayout(false);
             quieryTabPage.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)quieryTableDataGridView).EndInit();
+            ControlTabPage.ResumeLayout(false);
+            ControlTabPage.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -272,5 +345,11 @@
         private Button quieryResetFilterButton;
         private Label quierySortStatusLabel;
         private ComboBox quieryParamComboBox;
+        private TabPage ControlTabPage;
+        private Button ConnectionDynamicButton;
+        private Button LogoutButton;
+        private Label AccountDataLabel;
+        private Label ConnectionStatusLabel;
+        private Button CreateReportButton;
     }
 }
