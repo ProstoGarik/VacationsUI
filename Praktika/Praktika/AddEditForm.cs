@@ -185,74 +185,8 @@ namespace Praktika
                 string colName = column.ColumnName;
                 columnNames.Add(colName);
 
-                Label label = new Label
-                {
-                    Text = GetFieldLabel(colName),
-                    AutoSize = true,
-                    TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-                    Dock = DockStyle.Fill
-                };
-
-                Control inputControl;
-
-                if (foreignKeys.ContainsKey(colName))
-                {
-                    var fk = foreignKeys[colName];
-                    ComboBox comboBox = new ComboBox
-                    {
-                        Name = "cmb" + colName,
-                        Dock = DockStyle.Fill,
-                        DropDownStyle = ComboBoxStyle.DropDownList
-                    };
-                    LoadComboBoxData(comboBox, fk);
-                    inputControl = comboBox;
-                }
-                else if (column.DataType == typeof(bool))
-                {
-                    CheckBox checkBox = new CheckBox
-                    {
-                        Name = "chk" + colName,
-                        Dock = DockStyle.Fill,
-                        CheckAlign = System.Drawing.ContentAlignment.MiddleLeft
-                    };
-                    inputControl = checkBox;
-                }
-                else if (column.DataType == typeof(DateTime))
-                {
-                    if (viewModel?.CurrentTable == "Отпуска"
-                        && (IsVacationStartDateColumn(colName) || IsVacationEndDateColumn(colName)))
-                    {
-                        NullableDatePicker datePicker = new NullableDatePicker
-                        {
-                            Name = "ndp" + colName,
-                            Dock = DockStyle.Fill,
-                            ShowToday = false
-                        };
-                        RegisterVacationDatePicker(colName, datePicker);
-                        inputControl = datePicker;
-                    }
-                    else
-                    {
-                        DateTimePicker datePicker = new DateTimePicker
-                        {
-                            Name = "dtp" + colName,
-                            Dock = DockStyle.Fill,
-                            Format = DateTimePickerFormat.Short,
-                            Value = DateTime.Today
-                        };
-                        inputControl = datePicker;
-                    }
-                }
-                else
-                {
-                    TextBox textBox = new TextBox
-                    {
-                        Name = "txt" + colName,
-                        Dock = DockStyle.Fill,
-                        UseSystemPasswordChar = IsUserPasswordColumn(colName)
-                    };
-                    inputControl = textBox;
-                }
+                Label label = CreateFieldLabel(colName);
+                Control inputControl = CreateInputControl(column);
 
                 inputControls.Add(inputControl);
                 tableLayoutPanel.Controls.Add(label, 0, i);
@@ -268,6 +202,79 @@ namespace Praktika
             tableLayoutPanel.RowCount = rowCount + 2;
             tableLayoutPanel.Controls.Add(btnSave, 0, rowCount);
             tableLayoutPanel.Controls.Add(btnCancel, 1, rowCount);
+        }
+
+        private Label CreateFieldLabel(string columnName)
+        {
+            return new Label
+            {
+                Text = GetFieldLabel(columnName),
+                AutoSize = true,
+                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                Dock = DockStyle.Fill
+            };
+        }
+
+        private Control CreateInputControl(DataColumn column)
+        {
+            string columnName = column.ColumnName;
+
+            if (foreignKeys.TryGetValue(columnName, out ForeignKeyInfo fk))
+                return CreateComboBox(columnName, fk);
+
+            if (column.DataType == typeof(bool))
+                return new CheckBox
+                {
+                    Name = "chk" + columnName,
+                    Dock = DockStyle.Fill,
+                    CheckAlign = System.Drawing.ContentAlignment.MiddleLeft
+                };
+
+            if (column.DataType == typeof(DateTime))
+                return CreateDateControl(columnName);
+
+            return new TextBox
+            {
+                Name = "txt" + columnName,
+                Dock = DockStyle.Fill,
+                UseSystemPasswordChar = IsUserPasswordColumn(columnName)
+            };
+        }
+
+        private ComboBox CreateComboBox(string columnName, ForeignKeyInfo fk)
+        {
+            ComboBox comboBox = new ComboBox
+            {
+                Name = "cmb" + columnName,
+                Dock = DockStyle.Fill,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            LoadComboBoxData(comboBox, fk);
+            return comboBox;
+        }
+
+        private Control CreateDateControl(string columnName)
+        {
+            if (viewModel?.CurrentTable == "Отпуска"
+                && (IsVacationStartDateColumn(columnName) || IsVacationEndDateColumn(columnName)))
+            {
+                NullableDatePicker datePicker = new NullableDatePicker
+                {
+                    Name = "ndp" + columnName,
+                    Dock = DockStyle.Fill,
+                    ShowToday = false
+                };
+                RegisterVacationDatePicker(columnName, datePicker);
+                return datePicker;
+            }
+
+            return new DateTimePicker
+            {
+                Name = "dtp" + columnName,
+                Dock = DockStyle.Fill,
+                Format = DateTimePickerFormat.Short,
+                Value = DateTime.Today
+            };
         }
 
         private void LoadComboBoxData(ComboBox comboBox, ForeignKeyInfo fk)
@@ -319,78 +326,14 @@ namespace Praktika
                     ? table.PrimaryKey[0].ColumnName
                     : table.Columns[0].ColumnName;
 
-                var visibleColumns = GetEditableColumns(table, primaryKeyName);
-
-                var values = new Dictionary<string, object>();
-
-                for (int i = 0; i < visibleColumns.Count; i++)
-                {
-                    string colName = visibleColumns[i].ColumnName;
-                    Control control = inputControls[i];
-                    object value;
-
-                    if (control is ComboBox comboBox)
-                    {
-                        if (comboBox.SelectedItem == null)
-                        {
-                            MessageBox.Show($"Выберите значение для поля '{colName}'.", "Ошибка",
-                                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            return;
-                        }
-                        value = ((ComboItem)comboBox.SelectedItem).Value;
-                    }
-                    else if (control is CheckBox checkBox)
-                    {
-                        value = checkBox.Checked;
-                    }
-                    else if (control is NullableDatePicker nullableDatePicker)
-                    {
-                        if (!nullableDatePicker.SelectedDate.HasValue)
-                        {
-                            MessageBox.Show($"Выберите значение для поля '{GetFieldLabel(colName)}'.", "Ошибка",
-                                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            return;
-                        }
-                        value = nullableDatePicker.SelectedDate.Value.Date;
-                    }
-                    else if (control is DateTimePicker datePicker)
-                    {
-                        value = datePicker.Value.Date;
-                    }
-                    else if (control is TextBox textBox)
-                    {
-                        string text = textBox.Text.Trim();
-                        if (string.IsNullOrEmpty(text))
-                        {
-                            MessageBox.Show($"Поле '{colName}' не может быть пустым.", "Ошибка",
-                                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            return;
-                        }
-                        value = Convert.ChangeType(text, visibleColumns[i].DataType);
-                    }
-                    else continue;
-
-                    values.Add(colName, value);
-                }
-
+                if (!TryCollectValues(table, primaryKeyName, out Dictionary<string, object> values))
+                    return;
                 if (!TryAddCalculatedVacationDuration(table, values))
                     return;
 
                 DebugWriteFormValues(values);
 
-                bool success;
-                if (IsEditMode)
-                {
-                    success = viewModel.UpdateRow(viewModel.CurrentTable, primaryKeyName, PrimaryKeyValue, values);
-                }
-                else if (viewModel.CurrentTable == UsersTableName)
-                {
-                    success = CreateUser(values);
-                }
-                else
-                {
-                    success = viewModel.AddRow(values);
-                }
+                bool success = SaveValues(primaryKeyName, values);
 
                 if (success)
                     this.DialogResult = DialogResult.OK;
@@ -401,6 +344,95 @@ namespace Praktika
             {
                 MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private bool TryCollectValues(DataTable table, string primaryKeyName, out Dictionary<string, object> values)
+        {
+            values = new Dictionary<string, object>();
+            var visibleColumns = GetEditableColumns(table, primaryKeyName);
+
+            for (int i = 0; i < visibleColumns.Count; i++)
+            {
+                DataColumn column = visibleColumns[i];
+                Control control = inputControls[i];
+
+                if (!TryReadControlValue(column, control, out object value))
+                    return false;
+
+                values.Add(column.ColumnName, value);
+            }
+
+            return true;
+        }
+
+        private bool TryReadControlValue(DataColumn column, Control control, out object value)
+        {
+            value = DBNull.Value;
+            string columnName = column.ColumnName;
+
+            if (control is ComboBox comboBox)
+            {
+                if (comboBox.SelectedItem == null)
+                {
+                    MessageBox.Show($"Выберите значение для поля '{GetFieldLabel(columnName)}'.", "Ошибка",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
+
+                value = ((ComboItem)comboBox.SelectedItem).Value;
+                return true;
+            }
+
+            if (control is CheckBox checkBox)
+            {
+                value = checkBox.Checked;
+                return true;
+            }
+
+            if (control is NullableDatePicker nullableDatePicker)
+            {
+                if (!nullableDatePicker.SelectedDate.HasValue)
+                {
+                    MessageBox.Show($"Выберите значение для поля '{GetFieldLabel(columnName)}'.", "Ошибка",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
+
+                value = nullableDatePicker.SelectedDate.Value.Date;
+                return true;
+            }
+
+            if (control is DateTimePicker datePicker)
+            {
+                value = datePicker.Value.Date;
+                return true;
+            }
+
+            if (control is TextBox textBox)
+            {
+                string text = textBox.Text.Trim();
+                if (string.IsNullOrEmpty(text))
+                {
+                    MessageBox.Show($"Поле '{GetFieldLabel(columnName)}' не может быть пустым.", "Ошибка",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
+
+                value = Convert.ChangeType(text, column.DataType);
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool SaveValues(string primaryKeyName, Dictionary<string, object> values)
+        {
+            if (IsEditMode)
+                return viewModel.UpdateRow(viewModel.CurrentTable, primaryKeyName, PrimaryKeyValue, values);
+
+            return viewModel.CurrentTable == UsersTableName
+                ? CreateUser(values)
+                : viewModel.AddRow(values);
         }
 
         private bool CreateUser(Dictionary<string, object> values)

@@ -11,24 +11,29 @@ namespace Praktika
     {
         private const string UsersTableName = "Users";
         private const string RolesTableName = "Roles";
+        private const string DeleteButtonColumnName = "DeleteButton";
+        private const string EditButtonColumnName = "EditButton";
+        private const string VacationBySpecialtyQueryName = "Отпуска по специальности";
+        private const string NoFilterStatus = "Фильтр: Отсутствует";
+        private const string NoSortStatus = "Сортировка: Отсутствует";
+        private const int WdAlignParagraphCenter = 1;
+        private const int WdAutoFitContent = 1;
+        private const int WdDoNotSaveChanges = 0;
+
         private string currentDataDbPath;
         private string currentDataDbPassword;
         private bool isDataDbConnected;
 
         private ViewModel viewModel;
-        private readonly AuthenticatedUser? currentUser;
-        public bool LogoutRequested { get; private set; }
+        private AuthenticatedUser? currentUser;
 
-        public MainForm() : this(null)
-        {
-        }
-
-        public MainForm(AuthenticatedUser? currentUser)
+        public MainForm()
         {
             InitializeComponent();
-            this.currentUser = currentUser;
             viewModel = new ViewModel();
             ConfigureDataGridViews();
+            tabControl1.SelectedIndexChanged += TabControl1_SelectedIndexChanged;
+            GoToControlTabButton.Click += GoToControlTabButton_Click;
         }
 
         private void ConfigureDataGridViews()
@@ -48,56 +53,47 @@ namespace Praktika
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            // Заполнение ComboBox для таблиц
-            TableSelectComboBox.Items.Add("Отпуска");
-            TableSelectComboBox.Items.Add("Рабочие");
-            TableSelectComboBox.Items.Add("Подразделения");
-            if (CanEditUsers())
-            {
-                TableSelectComboBox.Items.Add(UsersTableName);
-                TableSelectComboBox.Items.Add(RolesTableName);
-            }
+            InitializeTableSelector();
+            InitializeQuerySelector();
 
-            // Инициализация пути к БД из настроек
             currentDataDbPath = null;
             currentDataDbPassword = string.Empty;
-            isDataDbConnected = false; // временно
-
-            // Обновляем UI кнопки и статуса
-            UpdateConnectionUI();
-
-            // Если путь задан, пытаемся загрузить первую таблицу
-            if (!string.IsNullOrEmpty(currentDataDbPath))
-            {
-                TableSelectComboBox.SelectedIndex = 0;
-                RefreshTable();
-                isDataDbConnected = viewModel.VacationsData != null;
-                UpdateConnectionUI();
-                UpdateStatusLabels();
-            }
-            else
-            {
-                // Если путь не задан, просто выбираем первый элемент, но не загружаем
-                TableSelectComboBox.SelectedIndex = 0;
-                tableDataGridView.DataSource = null;
-                RemoveActionButtons();
-                AddRowButton.Enabled = false;
-                FilterStatusLabel.Text = "Фильтр: Отсутствует";
-                SortStatusLabel.Text = "Сортировка: Отсутствует";
-                quieryFilterStatusLabel.Text = "Фильтр: Отсутствует";
-                quierySortStatusLabel.Text = "Сортировка: Отсутствует";
-                quieryParamComboBox.DataSource = null;
-                quieryTableDataGridView.DataSource = null;
-            }
-
-            // Заполнение ComboBox для запросов (подписки уже есть в дизайнере)
-            quierySelectComboBox.Items.Add("Отпуска по специальности");
-            quierySelectComboBox.SelectedIndex = 0;
+            isDataDbConnected = false;
 
             ClearDataUi();
             tabControl1.SelectedTab = ControlTabPage;
+            UpdateAccountDataLabel();
             UpdateConnectionUI();
+            UpdateDataTabsAvailabilityNotice();
             ApplyUserPermissions();
+        }
+
+        private void InitializeTableSelector()
+        {
+            TableSelectComboBox.Items.Clear();
+            TableSelectComboBox.Items.AddRange(new object[] { "Отпуска", "Рабочие", "Подразделения" });
+
+            if (TableSelectComboBox.Items.Count > 0)
+                TableSelectComboBox.SelectedIndex = 0;
+        }
+
+        private void AddAuthTablesToSelector()
+        {
+            if (!CanEditUsers())
+                return;
+
+            if (!TableSelectComboBox.Items.Contains(UsersTableName))
+                TableSelectComboBox.Items.Add(UsersTableName);
+
+            if (!TableSelectComboBox.Items.Contains(RolesTableName))
+                TableSelectComboBox.Items.Add(RolesTableName);
+        }
+
+        private void InitializeQuerySelector()
+        {
+            quierySelectComboBox.Items.Clear();
+            quierySelectComboBox.Items.Add(VacationBySpecialtyQueryName);
+            quierySelectComboBox.SelectedIndex = 0;
         }
 
         private void TableSelectComboBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -122,25 +118,7 @@ namespace Praktika
                 return;
             }
 
-            string dbPath, dbPassword;
-            if (IsAuthTable(table))
-            {
-                dbPath = AppSettings.AuthDbPath;
-                dbPassword = AppSettings.AuthDbPassword;
-            }
-            else
-            {
-                if (string.IsNullOrEmpty(currentDataDbPath))
-                {
-                    MessageBox.Show("База данных не подключена. Выберите файл БД на вкладке 'Управление'.", "Ошибка",
-                                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                dbPath = currentDataDbPath;
-                dbPassword = currentDataDbPassword;
-            }
-
-            viewModel.LoadTable(table, dbPath, dbPassword);
+            viewModel.LoadTable(table, currentDataDbPath, currentDataDbPassword);
             if (viewModel.VacationsData != null)
             {
                 BindTableData();
@@ -154,17 +132,14 @@ namespace Praktika
 
         private void AddActionButtons()
         {
-            if (tableDataGridView.Columns["DeleteButton"] != null)
-                tableDataGridView.Columns.Remove("DeleteButton");
-            if (tableDataGridView.Columns["EditButton"] != null)
-                tableDataGridView.Columns.Remove("EditButton");
+            RemoveActionButtons();
 
             if (!CanEditCurrentTable())
                 return;
 
             DataGridViewButtonColumn deleteColumn = new DataGridViewButtonColumn
             {
-                Name = "DeleteButton",
+                Name = DeleteButtonColumnName,
                 HeaderText = "",
                 Text = "Удалить",
                 UseColumnTextForButtonValue = true,
@@ -179,7 +154,7 @@ namespace Praktika
 
             DataGridViewButtonColumn editColumn = new DataGridViewButtonColumn
             {
-                Name = "EditButton",
+                Name = EditButtonColumnName,
                 HeaderText = "",
                 Text = "Изменить",
                 UseColumnTextForButtonValue = true,
@@ -194,10 +169,8 @@ namespace Praktika
         {
             foreach (DataGridViewColumn col in tableDataGridView.Columns)
             {
-                if (col.Name != "DeleteButton" && col.Name != "EditButton")
-                {
+                if (col.Name != DeleteButtonColumnName && col.Name != EditButtonColumnName)
                     col.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-                }
             }
         }
 
@@ -210,63 +183,79 @@ namespace Praktika
 
             DataGridViewColumn clickedColumn = tableDataGridView.Columns[e.ColumnIndex];
             DataGridViewRow row = tableDataGridView.Rows[e.RowIndex];
-            DataRowView dataRow = row.DataBoundItem as DataRowView;
-            if (dataRow == null) return;
-            if (clickedColumn.Name == "DeleteButton")
-            {
-                DialogResult result = MessageBox.Show("Удалить выбранную запись?", "Подтверждение",
-                                                       MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (result == DialogResult.Yes)
-                {
-                    bool deleted = DeleteRow(dataRow);
-                    if (deleted)
-                    {
-                        MessageBox.Show("Запись удалена.", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    else
-                    {
-                        MessageBox.Show("Ошибка при удалении.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-            else if (clickedColumn.Name == "EditButton")
-            {
-                DataTable dt = dataRow.DataView.Table;
-                string pkColumn = dt.PrimaryKey.Length > 0
-                    ? dt.PrimaryKey[0].ColumnName
-                    : dt.Columns[0].ColumnName;
-                object pkValue = dataRow[pkColumn];
+            if (row.DataBoundItem is not DataRowView dataRow)
+                return;
 
-                var editValues = new Dictionary<string, object>();
-                foreach (DataColumn col in dt.Columns)
-                {
-                    if (col.ColumnName != pkColumn)
-                        editValues[col.ColumnName] = dataRow[col.ColumnName];
-                }
-
-                using (AddEditForm editForm = new AddEditForm())
-                {
-                    editForm.SetViewModel(viewModel);
-                    editForm.IsEditMode = true;
-                    editForm.PrimaryKeyValue = pkValue;
-                    editForm.EditValues = editValues;
-                    if (editForm.ShowDialog(this) == DialogResult.OK)
-                    {
-                        RefreshTable();
-                    }
-                }
+            if (clickedColumn.Name == DeleteButtonColumnName)
+            {
+                DeleteSelectedRow(dataRow);
             }
+            else if (clickedColumn.Name == EditButtonColumnName)
+            {
+                EditSelectedRow(dataRow);
+            }
+        }
+
+        private void DeleteSelectedRow(DataRowView dataRow)
+        {
+            DialogResult result = MessageBox.Show("Удалить выбранную запись?", "Подтверждение",
+                                                   MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result != DialogResult.Yes)
+                return;
+
+            if (DeleteRow(dataRow))
+                MessageBox.Show("Запись удалена.", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            else
+                MessageBox.Show("Ошибка при удалении.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        private void EditSelectedRow(DataRowView dataRow)
+        {
+            DataTable table = dataRow.DataView.Table;
+            string primaryKeyColumn = GetPrimaryKeyColumn(table);
+
+            using (AddEditForm editForm = new AddEditForm())
+            {
+                editForm.SetViewModel(viewModel);
+                editForm.IsEditMode = true;
+                editForm.PrimaryKeyValue = dataRow[primaryKeyColumn];
+                editForm.EditValues = GetEditValues(dataRow, primaryKeyColumn);
+
+                if (editForm.ShowDialog(this) == DialogResult.OK)
+                    RefreshTable();
+            }
+        }
+
+        private static string GetPrimaryKeyColumn(DataTable table)
+        {
+            return table.PrimaryKey.Length > 0
+                ? table.PrimaryKey[0].ColumnName
+                : table.Columns[0].ColumnName;
+        }
+
+        private static Dictionary<string, object> GetEditValues(DataRowView dataRow, string primaryKeyColumn)
+        {
+            var values = new Dictionary<string, object>();
+            foreach (DataColumn column in dataRow.DataView.Table.Columns)
+            {
+                if (column.ColumnName != primaryKeyColumn)
+                    values[column.ColumnName] = dataRow[column.ColumnName];
+            }
+
+            return values;
         }
 
         private bool DeleteRow(DataRowView dataRow)
         {
-            string currentTable = TableSelectComboBox.SelectedItem.ToString();
+            string currentTable = TableSelectComboBox.SelectedItem?.ToString();
+            if (string.IsNullOrEmpty(currentTable))
+                return false;
+
             DataTable dt = dataRow.DataView.Table;
-            string pkColumn = dt.Columns[0].ColumnName;
+            string pkColumn = GetPrimaryKeyColumn(dt);
             object pkValue = dataRow[pkColumn];
 
-            bool deleted = viewModel.DeleteRow(currentTable, pkColumn, pkValue);
-            return deleted;
+            return viewModel.DeleteRow(currentTable, pkColumn, pkValue);
         }
 
         private void AddRowButton_Click(object sender, EventArgs e)
@@ -350,13 +339,12 @@ namespace Praktika
         private void RefreshSelectedQuery()
         {
             string selected = quierySelectComboBox.SelectedItem?.ToString();
-            if (selected == "Отпуска по специальности")
+            if (selected == VacationBySpecialtyQueryName)
             {
                 LoadSpecialties();
             }
             else
             {
-                // Для других запросов (пока нет) очищаем параметры и таблицу
                 quieryParamComboBox.DataSource = null;
                 quieryTableDataGridView.DataSource = null;
             }
@@ -371,11 +359,9 @@ namespace Praktika
                 return;
             }
 
-            // Получаем таблицу "Рабочие" через существующий метод ViewModel
             DataTable workers = viewModel.GetTableData("Рабочие");
             if (workers != null && workers.Rows.Count > 0)
             {
-                // Извлекаем уникальные значения специальностей
                 var specialties = workers.AsEnumerable()
                                          .Select(row => row.Field<string>("Специальность"))
                                          .Where(s => !string.IsNullOrEmpty(s))
@@ -383,7 +369,6 @@ namespace Praktika
                                          .ToList();
                 quieryParamComboBox.DataSource = specialties;
                 quieryParamComboBox.DisplayMember = "ToString";
-                // Если есть хотя бы одна специальность, автоматически выбираем первую
                 if (specialties.Count > 0)
                     quieryParamComboBox.SelectedIndex = 0;
             }
@@ -470,7 +455,7 @@ namespace Praktika
                 titleParagraph.Range.Text = title;
                 titleParagraph.Range.Font.Bold = 1;
                 titleParagraph.Range.Font.Size = 12;
-                titleParagraph.Alignment = 1; // wdAlignParagraphCenter
+                titleParagraph.Alignment = WdAlignParagraphCenter;
                 titleParagraph.Range.InsertParagraphAfter();
 
                 dynamic tableRange = document.Paragraphs.Add().Range;
@@ -500,12 +485,12 @@ namespace Praktika
                 table.Range.Font.Bold = 0;
                 table.Range.Font.Size = 12;
 
-                table.AutoFitBehavior(1); // wdAutoFitContent
+                table.AutoFitBehavior(WdAutoFitContent);
                 wordApp.Visible = true;
             }
             catch
             {
-                document.Close(0); // wdDoNotSaveChanges
+                document.Close(WdDoNotSaveChanges);
                 wordApp.Quit();
                 throw;
             }
@@ -550,6 +535,7 @@ namespace Praktika
         private bool CanEditCurrentTable()
         {
             if (!isDataDbConnected) return false;
+            if (currentUser == null) return false;
             return IsCurrentAuthTable() ? CanEditUsers() : CanEditData();
         }
 
@@ -560,10 +546,7 @@ namespace Praktika
 
             if (!canEditCurrentTable)
             {
-                if (tableDataGridView.Columns["DeleteButton"] != null)
-                    tableDataGridView.Columns.Remove("DeleteButton");
-                if (tableDataGridView.Columns["EditButton"] != null)
-                    tableDataGridView.Columns.Remove("EditButton");
+                RemoveActionButtons();
             }
         }
 
@@ -571,7 +554,7 @@ namespace Praktika
         {
             if (isDataDbConnected)
             {
-                ConnectionDynamicButton.Text = "Закрыть";
+                ConnectionDynamicButton.Text = "Закрыть подключение";
                 ConnectionStatusLabel.Text = "Подключение к БД: Выполнено";
             }
             else
@@ -579,14 +562,90 @@ namespace Praktika
                 ConnectionDynamicButton.Text = "Выбрать файл";
                 ConnectionStatusLabel.Text = "Подключение к БД: Не выполнено";
             }
+
+            LogoutButton.Enabled = currentUser != null;
+        }
+
+        private void UpdateAccountDataLabel()
+        {
+            string login = string.IsNullOrWhiteSpace(currentUser?.Login)
+                ? "неизвестно"
+                : currentUser.Login;
+
+            AccountDataLabel.Text = $"Выполнен вход как: {login}";
+        }
+
+        private void TabControl1_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            UpdateDataTabsAvailabilityNotice();
+        }
+
+        private void GoToControlTabButton_Click(object? sender, EventArgs e)
+        {
+            tabControl1.SelectedTab = ControlTabPage;
+        }
+
+        private void UpdateDataTabsAvailabilityNotice()
+        {
+            UpdateDataTabsContentVisibility();
+
+            bool shouldShowNotice = !isDataDbConnected && IsDataTabSelected();
+            if (shouldShowNotice)
+            {
+                MoveDataTabAvailabilityNoticeToSelectedTab();
+                TabNotAvailableLabel.BringToFront();
+                GoToControlTabButton.BringToFront();
+            }
+
+            TabNotAvailableLabel.Visible = shouldShowNotice;
+            GoToControlTabButton.Visible = shouldShowNotice;
+        }
+
+        private void UpdateDataTabsContentVisibility()
+        {
+            SetTabContentVisibility(tablesTabPage, isDataDbConnected);
+            SetTabContentVisibility(quieryTabPage, isDataDbConnected);
+        }
+
+        private void SetTabContentVisibility(TabPage tabPage, bool isVisible)
+        {
+            foreach (Control control in tabPage.Controls)
+            {
+                if (control == TabNotAvailableLabel || control == GoToControlTabButton)
+                    continue;
+
+                control.Visible = isVisible;
+            }
+        }
+
+        private bool IsDataTabSelected()
+        {
+            return tabControl1.SelectedTab == tablesTabPage || tabControl1.SelectedTab == quieryTabPage;
+        }
+
+        private void MoveDataTabAvailabilityNoticeToSelectedTab()
+        {
+            TabPage targetTab = tabControl1.SelectedTab == quieryTabPage
+                ? quieryTabPage
+                : tablesTabPage;
+
+            if (TabNotAvailableLabel.Parent != targetTab)
+                targetTab.Controls.Add(TabNotAvailableLabel);
+
+            if (GoToControlTabButton.Parent != targetTab)
+                targetTab.Controls.Add(GoToControlTabButton);
         }
 
         private void RemoveActionButtons()
         {
-            if (tableDataGridView.Columns["DeleteButton"] != null)
-                tableDataGridView.Columns.Remove("DeleteButton");
-            if (tableDataGridView.Columns["EditButton"] != null)
-                tableDataGridView.Columns.Remove("EditButton");
+            RemoveColumnIfExists(DeleteButtonColumnName);
+            RemoveColumnIfExists(EditButtonColumnName);
+        }
+
+        private void RemoveColumnIfExists(string columnName)
+        {
+            if (tableDataGridView.Columns[columnName] != null)
+                tableDataGridView.Columns.Remove(columnName);
         }
 
         private void ClearDataUi()
@@ -596,10 +655,10 @@ namespace Praktika
             quieryParamComboBox.DataSource = null;
             RemoveActionButtons();
             AddRowButton.Enabled = false;
-            FilterStatusLabel.Text = "Фильтр: Отсутствует";
-            SortStatusLabel.Text = "Сортировка: Отсутствует";
-            quieryFilterStatusLabel.Text = "Фильтр: Отсутствует";
-            quierySortStatusLabel.Text = "Сортировка: Отсутствует";
+            FilterStatusLabel.Text = NoFilterStatus;
+            SortStatusLabel.Text = NoSortStatus;
+            quieryFilterStatusLabel.Text = NoFilterStatus;
+            quierySortStatusLabel.Text = NoSortStatus;
         }
 
         private void DisconnectData()
@@ -608,8 +667,13 @@ namespace Praktika
             currentDataDbPath = null;
             currentDataDbPassword = string.Empty;
             isDataDbConnected = false;
+            currentUser = null;
             ClearDataUi();
+            InitializeTableSelector();
+            tabControl1.SelectedTab = ControlTabPage;
+            UpdateAccountDataLabel();
             UpdateConnectionUI();
+            UpdateDataTabsAvailabilityNotice();
             ApplyUserPermissions();
         }
 
@@ -618,43 +682,61 @@ namespace Praktika
             if (isDataDbConnected)
             {
                 DisconnectData();
+                return;
             }
-            else
+
+            ConnectDataFromFile();
+        }
+
+        private void ConnectDataFromFile()
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                // Выбор нового файла БД
-                using (OpenFileDialog ofd = new OpenFileDialog())
+                openFileDialog.Filter = "Файлы Access (*.accdb)|*.accdb|Все файлы (*.*)|*.*";
+                openFileDialog.Title = "Выберите базу данных";
+                if (openFileDialog.ShowDialog() != DialogResult.OK)
+                    return;
+
+                currentDataDbPath = openFileDialog.FileName;
+                currentDataDbPassword = string.Empty;
+                viewModel.ConfigureAuthDatabase(currentDataDbPath, currentDataDbPassword);
+
+                using (LoginForm loginForm = new LoginForm(currentDataDbPath, currentDataDbPassword))
                 {
-                    ofd.Filter = "Файлы Access (*.accdb)|*.accdb|Все файлы (*.*)|*.*";
-                    ofd.Title = "Выберите базу данных";
-                    if (ofd.ShowDialog() == DialogResult.OK)
+                    if (loginForm.ShowDialog(this) != DialogResult.OK || loginForm.CurrentUser == null)
                     {
-                        currentDataDbPath = ofd.FileName;
-                        currentDataDbPassword = string.Empty; // при необходимости можно запросить пароль
-                        RefreshTable(); // попытка загрузить текущую таблицу
-                        if (viewModel.VacationsData != null)
-                        {
-                            isDataDbConnected = true;
-                            UpdateConnectionUI();
-                            UpdateStatusLabels();
-                            RefreshSelectedQuery();
-                            ApplyUserPermissions();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Не удалось подключиться к выбранной базе данных или загрузить таблицу.",
-                                            "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            currentDataDbPath = null;
-                        }
+                        DisconnectData();
+                        return;
                     }
+
+                    currentUser = loginForm.CurrentUser;
                 }
+
+                AddAuthTablesToSelector();
+                isDataDbConnected = true;
+                RefreshTable();
+
+                if (viewModel.VacationsData != null)
+                {
+                    UpdateAccountDataLabel();
+                    UpdateConnectionUI();
+                    UpdateDataTabsAvailabilityNotice();
+                    UpdateStatusLabels();
+                    RefreshSelectedQuery();
+                    ApplyUserPermissions();
+                    tabControl1.SelectedTab = tablesTabPage;
+                    return;
+                }
+
+                MessageBox.Show("Не удалось подключиться к выбранной базе данных или загрузить таблицу.",
+                                "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                DisconnectData();
             }
         }
 
         private void LogoutButton_Click(object sender, EventArgs e)
         {
             DisconnectData();
-            LogoutRequested = true;
-            Close();
         }
     }
 }

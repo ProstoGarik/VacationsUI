@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 
 namespace ClassLibrary
 {
+    /// <summary>Данные авторизованного пользователя.</summary>
     public class AuthenticatedUser
     {
         public int ID { get; set; }
@@ -14,6 +15,7 @@ namespace ClassLibrary
         public bool CanEditData { get; set; }
     }
 
+    /// <summary>Строка списка пользователей с ролью и правами.</summary>
     public class UserInfo
     {
         public int ID { get; set; }
@@ -24,6 +26,7 @@ namespace ClassLibrary
         public bool CanEditData { get; set; }
     }
 
+    /// <summary>Роль пользователя и доступные права.</summary>
     public class RoleInfo
     {
         public int ID { get; set; }

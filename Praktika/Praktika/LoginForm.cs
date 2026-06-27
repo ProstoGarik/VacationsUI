@@ -17,10 +17,11 @@ namespace Praktika
 
         public AuthenticatedUser? CurrentUser { get; private set; }
 
-        public LoginForm()
+        public LoginForm(string dbPath, string dbPassword)
         {
             InitializeComponent();
             viewModel = new ViewModel();
+            viewModel.ConfigureAuthDatabase(dbPath, dbPassword);
 
             Text = "Вход";
             PasswordTextBox.UseSystemPasswordChar = true;

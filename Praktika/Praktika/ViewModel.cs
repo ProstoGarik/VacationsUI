@@ -7,7 +7,7 @@ namespace Praktika
     public class ViewModel
     {
         private DataManager dataManager;
-        private AuthManager authManager;
+        private AuthManager? authManager;
         private List<FilterCondition> activeFilters = new();
         private SortCondition activeSort;
         private List<FilterCondition> savedFormFilters = new();
@@ -28,77 +28,87 @@ namespace Praktika
         public ViewModel()
         {
             dataManager = new DataManager();
-            authManager = new AuthManager(AppSettings.AuthDbPath);
+        }
+
+        public void ConfigureAuthDatabase(string dbPath, string dbPassword)
+        {
+            authManager = new AuthManager(dbPath, dbPassword);
         }
 
         public AuthenticatedUser? AuthenticateUser(string login, string password)
         {
-            return authManager.Authenticate(login, password);
+            return GetAuthManager().Authenticate(login, password);
         }
 
         public List<UserInfo> GetUsers()
         {
-            return authManager.GetUsers();
+            return GetAuthManager().GetUsers();
         }
 
         public List<RoleInfo> GetRoles()
         {
-            return authManager.GetRoles();
+            return GetAuthManager().GetRoles();
         }
 
         public bool UserExists(string login)
         {
-            return authManager.UserExists(login);
+            return GetAuthManager().UserExists(login);
         }
 
         public int CreateUser(string login, string password, int roleId)
         {
-            return authManager.CreateUser(login, password, roleId);
+            return GetAuthManager().CreateUser(login, password, roleId);
         }
 
         public int CreateUserWithPasswordHash(string login, string passwordHash, int roleId)
         {
-            return authManager.CreateUserWithPasswordHash(login, passwordHash, roleId);
+            return GetAuthManager().CreateUserWithPasswordHash(login, passwordHash, roleId);
         }
 
         public bool UpdateUserLogin(int userId, string login)
         {
-            return authManager.UpdateUserLogin(userId, login);
+            return GetAuthManager().UpdateUserLogin(userId, login);
         }
 
         public bool UpdateUserPassword(int userId, string password)
         {
-            return authManager.UpdateUserPassword(userId, password);
+            return GetAuthManager().UpdateUserPassword(userId, password);
         }
 
         public bool UpdateUserRole(int userId, int roleId)
         {
-            return authManager.UpdateUserRole(userId, roleId);
+            return GetAuthManager().UpdateUserRole(userId, roleId);
         }
 
         public bool DeleteUser(int userId)
         {
-            return authManager.DeleteUser(userId);
+            return GetAuthManager().DeleteUser(userId);
         }
 
         public int CreateRole(string roleName, bool canEditUsers, bool canEditData)
         {
-            return authManager.CreateRole(roleName, canEditUsers, canEditData);
+            return GetAuthManager().CreateRole(roleName, canEditUsers, canEditData);
         }
 
         public bool UpdateRole(int roleId, string roleName, bool canEditUsers, bool canEditData)
         {
-            return authManager.UpdateRole(roleId, roleName, canEditUsers, canEditData);
+            return GetAuthManager().UpdateRole(roleId, roleName, canEditUsers, canEditData);
         }
 
         public bool DeleteRole(int roleId)
         {
-            return authManager.DeleteRole(roleId);
+            return GetAuthManager().DeleteRole(roleId);
         }
 
         public bool HasUsers()
         {
-            return authManager.HasUsers();
+            return GetAuthManager().HasUsers();
+        }
+
+        private AuthManager GetAuthManager()
+        {
+            return authManager
+                ?? throw new InvalidOperationException("База данных пользователей не подключена.");
         }
 
         /// <summary>Загружает выбранную таблицу из базы.</summary>

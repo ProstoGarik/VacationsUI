@@ -38,6 +38,7 @@
             ResetFilterButton = new Button();
             SortStatusLabel = new Label();
             quieryTabPage = new TabPage();
+            CreateReportButton = new Button();
             quieryParamComboBox = new ComboBox();
             quieryTableDataGridView = new DataGridView();
             quierySelectComboBox = new ComboBox();
@@ -50,7 +51,8 @@
             ConnectionStatusLabel = new Label();
             ConnectionDynamicButton = new Button();
             LogoutButton = new Button();
-            CreateReportButton = new Button();
+            TabNotAvailableLabel = new Label();
+            GoToControlTabButton = new Button();
             tabControl1.SuspendLayout();
             tablesTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)tableDataGridView).BeginInit();
@@ -73,6 +75,8 @@
             // 
             // tablesTabPage
             // 
+            tablesTabPage.Controls.Add(GoToControlTabButton);
+            tablesTabPage.Controls.Add(TabNotAvailableLabel);
             tablesTabPage.Controls.Add(tableDataGridView);
             tablesTabPage.Controls.Add(TableSelectComboBox);
             tablesTabPage.Controls.Add(AddRowButton);
@@ -174,6 +178,16 @@
             quieryTabPage.TabIndex = 1;
             quieryTabPage.Text = "Запросы";
             quieryTabPage.UseVisualStyleBackColor = true;
+            // 
+            // CreateReportButton
+            // 
+            CreateReportButton.Location = new Point(10, 370);
+            CreateReportButton.Name = "CreateReportButton";
+            CreateReportButton.Size = new Size(204, 92);
+            CreateReportButton.TabIndex = 22;
+            CreateReportButton.Text = "Сгенерировать отчёт";
+            CreateReportButton.UseVisualStyleBackColor = true;
+            CreateReportButton.Click += CreateReportButton_Click;
             // 
             // quieryParamComboBox
             // 
@@ -296,15 +310,23 @@
             LogoutButton.UseVisualStyleBackColor = true;
             LogoutButton.Click += LogoutButton_Click;
             // 
-            // CreateReportButton
+            // TabNotAvailableLabel
             // 
-            CreateReportButton.Location = new Point(10, 370);
-            CreateReportButton.Name = "CreateReportButton";
-            CreateReportButton.Size = new Size(204, 92);
-            CreateReportButton.TabIndex = 22;
-            CreateReportButton.Text = "Сгенерировать отчёт";
-            CreateReportButton.UseVisualStyleBackColor = true;
-            CreateReportButton.Click += CreateReportButton_Click;
+            TabNotAvailableLabel.AutoSize = true;
+            TabNotAvailableLabel.Location = new Point(114, 116);
+            TabNotAvailableLabel.Name = "TabNotAvailableLabel";
+            TabNotAvailableLabel.Size = new Size(703, 20);
+            TabNotAvailableLabel.TabIndex = 14;
+            TabNotAvailableLabel.Text = "Чтобы начать работу необходмо выполнить подключение к базе данных во вкладке \"Управление\"";
+            // 
+            // GoToControlTabButton
+            // 
+            GoToControlTabButton.Location = new Point(363, 162);
+            GoToControlTabButton.Name = "GoToControlTabButton";
+            GoToControlTabButton.Size = new Size(226, 47);
+            GoToControlTabButton.TabIndex = 15;
+            GoToControlTabButton.Text = "Перейти во вкладку";
+            GoToControlTabButton.UseVisualStyleBackColor = true;
             // 
             // MainForm
             // 
@@ -351,5 +373,7 @@
         private Label AccountDataLabel;
         private Label ConnectionStatusLabel;
         private Button CreateReportButton;
+        private Button GoToControlTabButton;
+        private Label TabNotAvailableLabel;
     }
 }

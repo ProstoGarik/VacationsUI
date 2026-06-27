@@ -7,7 +7,7 @@ namespace ClassLibrary
     /// <summary>Операции чтения и изменения данных в Access.</summary>
     public class DataManager
     {
-        private ConnectionManager connectionManager;
+        private readonly ConnectionManager connectionManager;
 
         public DataManager()
         {
@@ -116,13 +116,7 @@ namespace ClassLibrary
         /// <summary>Добавляет строку; типы параметров определяются по схеме таблицы.</summary>
         public bool InsertRow(string table, Dictionary<string, object> columnValues)
         {
-            DataTable schema = null;
-            using (var conn = new OleDbConnection(connectionManager.ConnectionString))
-            {
-                conn.Open();
-                schema = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, table, null });
-                conn.Close();
-            }
+            DataTable schema = GetTableSchema(table);
             DebugWriteSchema(table, schema);
 
             var columns = new List<string>();
@@ -130,7 +124,6 @@ namespace ClassLibrary
 
             foreach (var kvp in columnValues)
             {
-                // ID в Access обычно автоинкрементный
                 if (kvp.Key == "ID")
                     continue;
 
@@ -179,13 +172,7 @@ namespace ClassLibrary
         /// <summary>Обновляет строку по первичному ключу.</summary>
         public bool UpdateRow(string table, string primaryKeyColumn, object primaryKeyValue, Dictionary<string, object> columnValues)
         {
-            DataTable schema;
-            using (var conn = new OleDbConnection(connectionManager.ConnectionString))
-            {
-                conn.Open();
-                schema = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, table, null });
-                conn.Close();
-            }
+            DataTable schema = GetTableSchema(table);
 
             var setClauses = new List<string>();
             var parameters = new List<OleDbParameter>();
@@ -228,15 +215,16 @@ namespace ClassLibrary
 
         private OleDbType? GetColumnOleDbType(string table, string column)
         {
-            using (var conn = new OleDbConnection(connectionManager.ConnectionString))
-            {
-                conn.Open();
-                var schema = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, table, null });
-                DataRow[] rows = schema.Select($"COLUMN_NAME = '{column}'");
-                if (rows.Length == 0)
-                    return null;
-                return MapDataType(rows[0]["DATA_TYPE"]);
-            }
+            DataRow[] rows = GetTableSchema(table).Select($"COLUMN_NAME = '{column}'");
+            return rows.Length == 0 ? null : MapDataType(rows[0]["DATA_TYPE"]);
+        }
+
+        private DataTable GetTableSchema(string table)
+        {
+            using var conn = new OleDbConnection(connectionManager.ConnectionString);
+            conn.Open();
+            return conn.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, table, null })
+                ?? new DataTable();
         }
 
         private static object ConvertFilterValue(string value, OleDbType oleDbType)
